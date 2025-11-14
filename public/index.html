@@ -43,6 +43,7 @@
             transform: scale(1.1);
         }
     </style>
+    
 </head>
 <body class="bg-gray-100">
 
@@ -162,6 +163,23 @@
         </nav>
     </div>
 
+ <script>
+        const __firebase_config = JSON.stringify({
+            apiKey: "AIzaSyCtKpF8fNApfznKWov-8TtxTsy413rMJWY",
+            authDomain: "barber-shop-a747d.firebaseapp.com",
+            projectId: "barber-shop-a747d",
+            storageBucket: "barber-shop-a747d.firebasestorage.app",
+            messagingSenderId: "249637761566",
+            appId: "1:249637761566:web:e5aa2f0bb3db5f8541740f",
+            measurementId: "G-8Z0DHHSPP8"
+        });
+        const __app_id = 'barber-shop-app';
+        const __initial_auth_token = null;
+    </script>
+
+    
+
+
     <!-- Modulo para imports de Firebase -->
     <script type="module">
         // Importaciones de Firebase
@@ -179,9 +197,8 @@
             doc, // <-- AÑADIDO
             updateDoc // <-- AÑADIDO
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // --- CONFIGURACIÓN DE FIREBASE (Usa variables globales) ---
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-barber-app';
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
