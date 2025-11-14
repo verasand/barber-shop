@@ -185,11 +185,11 @@
         // Importaciones de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            onSnapshot, 
-            addDoc, 
+        import {
+            getFirestore,
+            collection,
+            onSnapshot,
+            addDoc,
             getDocs,
             Timestamp,
             query,
@@ -197,6 +197,8 @@
             doc, // <-- AÑADIDO
             updateDoc // <-- AÑADIDO
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        import { buildExampleAppointments, DEFAULT_EXAMPLE_SEED_GROUP } from "./mock-data.js";
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-barber-app';
@@ -814,117 +816,28 @@
 
         async function seedMockData() {
             const appointmentsCol = getAppointmentsCollection();
-            
+
             // Revisar si ya hay datos para no duplicar
-            const existingData = await getDocs(query(appointmentsCol, where("customerName", "==", "Juan Pérez")));
+            const existingData = await getDocs(query(appointmentsCol, where("seedGroup", "==", DEFAULT_EXAMPLE_SEED_GROUP)));
             if (!existingData.empty) {
-                alert("Los datos de ejemplo ya fueron cargados.");
+                alert("El set de datos de ejemplo ya fue cargado.");
                 return;
             }
 
-            console.log("Cargando datos de ejemplo...");
+            console.log("Cargando set de datos de ejemplo base...");
 
-            const today = new Date();
-            const today_9am = new Date(today.setHours(9, 0, 0, 0));
-            const today_11am = new Date(today.setHours(11, 0, 0, 0));
-            const today_2pm = new Date(today.setHours(14, 0, 0, 0));
-            const today_4pm = new Date(today.setHours(16, 0, 0, 0)); // Nueva cita
-
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterday_10am = new Date(yesterday.setHours(10, 0, 0, 0));
-            
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrow_3pm = new Date(tomorrow.setHours(15, 0, 0, 0));
-
-
-            const mockAppointments = [
-                // Hoy (completada)
-                {
-                    customerName: "Juan Pérez",
-                    phone: "+573001112233", // AÑADIDO
-                    service: "Corte de Hombre",
-                    dateTime: Timestamp.fromDate(today_9am),
-                    duration: 30,
-                    price: 25,
-                    status: "completed",
-                    workerId: "barber_01",
-                    elapsedTime: 0, // AÑADIDO
-                    startTime: null // AÑADIDO
-                },
-                // Hoy (pausada) - CAMBIADO
-                {
-                    customerName: "Carlos Gómez",
-                    phone: "+573004445566", // AÑADIDO
-                    service: "Corte y Barba",
-                    dateTime: Timestamp.fromDate(today_11am),
-                    duration: 45,
-                    price: 40,
-                    status: "paused", // CAMBIADO
-                    workerId: "barber_02",
-                    elapsedTime: 900000, // CAMBIADO (15 mins)
-                    startTime: null // CAMBIADO
-                },
-                // Hoy (en progreso) - CAMBIADO
-                {
-                    customerName: "Luis Martínez",
-                    phone: "+573007778899", // AÑADIDO
-                    service: "Corte de Hombre",
-                    dateTime: Timestamp.fromDate(today_2pm),
-                    duration: 30,
-                    price: 25,
-                    status: "in-progress", // CAMBIADO
-                    workerId: "barber_01",
-                    elapsedTime: 0, // CAMBIADO
-                    startTime: Timestamp.fromDate(new Date(Date.now() - 5 * 60000)) // CAMBIADO (empezó hace 5 min)
-                },
-                // Hoy (pendiente, más tarde) - NUEVA
-                {
-                    customerName: "Miguel Ángel",
-                    phone: "+573001237890", // AÑADIDO
-                    service: "Corte de Niño",
-                    dateTime: Timestamp.fromDate(today_4pm),
-                    duration: 30,
-                    price: 20,
-                    status: "pending",
-                    workerId: "barber_01",
-                    elapsedTime: 0, // AÑADIDO
-                    startTime: null // AÑADIDO
-                },
-                // Ayer (completada)
-                {
-                    customerName: "Andrés Silva",
-                    phone: "+573009998877", // AÑADIDO
-                    service: "Corte de Hombre",
-                    dateTime: Timestamp.fromDate(yesterday_10am),
-                    duration: 30,
-                    price: 25,
-                    status: "completed",
-                    workerId: "barber_01",
-                    elapsedTime: 0, // AÑADIDO
-                    startTime: null // AÑADIDO
-                },
-                // Mañana (pendiente)
-                {
-                    customerName: "David Rojas",
-                    phone: "+573006665544", // AÑADIDO
-                    service: "Barba",
-                    dateTime: Timestamp.fromDate(tomorrow_3pm),
-                    duration: 20,
-                    price: 15,
-                    status: "pending",
-                    workerId: "barber_02",
-                    elapsedTime: 0, // AÑADIDO
-                    startTime: null // AÑADIDO
-                }
-            ];
+            const exampleAppointments = buildExampleAppointments({ setName: "base", referenceDate: new Date() });
 
             try {
-                for (const apt of mockAppointments) {
-                    await addDoc(appointmentsCol, apt);
+                for (const appointment of exampleAppointments) {
+                    const { dateTime, startTime, ...rest } = appointment;
+                    await addDoc(appointmentsCol, {
+                        ...rest,
+                        dateTime: Timestamp.fromDate(dateTime),
+                        startTime: startTime ? Timestamp.fromDate(startTime) : null,
+                    });
                 }
-                alert("Datos de ejemplo cargados con éxito.");
+                alert("Set de datos de ejemplo cargado con éxito.");
             } catch (error) {
                 console.error("Error al cargar datos de ejemplo: ", error);
                 alert("Error al cargar datos de ejemplo.");
