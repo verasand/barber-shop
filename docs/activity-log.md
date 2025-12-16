@@ -12,3 +12,9 @@ Tareas:
 Revisar prototipo, identificar áreas de mejora
 
 Correr localmente -> como configurar firebase here SOLID FOCUS SESSION
+
+
+
+December 16, 2025
+
+Se mejora prototipo. Interacción: https://gemini.google.com/app/ad20011bc2724635
