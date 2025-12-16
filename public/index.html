@@ -42,6 +42,19 @@
         .action-btn:hover {
             transform: scale(1.1);
         }
+        /* Estilo para el modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
     </style>
     
 </head>
@@ -51,7 +64,6 @@
     <div class="max-w-md mx-auto bg-white min-h-screen shadow-lg">
 
         <!-- Cabecera -->
-        <!-- AÑADIDO: 'relative' -->
         <header class="bg-gray-800 text-white p-4 shadow-md sticky top-0 z-10 relative">
             <!-- Reloj en la esquina superior derecha -->
             <div id="current-time-clock" class="absolute top-4 right-4 text-sm font-mono text-gray-300">
@@ -60,7 +72,7 @@
             
             <h1 class="text-xl font-bold text-center" id="header-title">Citas de Hoy</h1>
             <div class="text-xs text-center text-gray-400 mt-1">
-                User ID: <span id="userIdDisplay" class="font-mono">cargando...</span>
+                User ID: <span id="userIdDisplay" class="font-mono">local_user_12345</span>
             </div>
         </header>
 
@@ -69,13 +81,55 @@
 
             <!-- Página 1: Vista Diaria (por defecto) -->
             <div id="page-today" class="space-y-4">
+                
+                <!-- Contenedor de Status (reemplazo de alert/confirm) -->
+                <div id="status-message" class="hidden p-3 rounded-lg text-center font-medium transition-opacity duration-300"></div>
+
+                <!-- Controles y Botones de Reseteo/Carga de Datos -->
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-semibold" id="today-date"></h2>
-                    <button id="seed-data" class="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600">Cargar Datos de Ejemplo</button>
+                    <div class="space-x-2 flex items-center">
+                        <button id="reset-data" class="bg-red-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-600 transition action-btn">Resetear App</button>
+                        <button id="seed-data" class="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600 transition action-btn">Cargar Datos de Ejemplo</button>
+                    </div>
                 </div>
+
+                <!-- SECCIÓN: CITAS COMPLETADAS PLEGABLES -->
+                <div id="completed-appointments-toggle" class="bg-gray-100 p-3 rounded-lg cursor-pointer hover:bg-gray-200 flex justify-between items-center shadow-sm">
+                    <span class="font-medium text-gray-700">Citas Completadas (<span id="completed-count">0</span>)</span>
+                    <!-- Icono de flecha: hacia abajo por defecto (cerrado) -->
+                    <svg id="completed-toggle-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform duration-300 transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+
+                <!-- Contenedor para la lista de completadas (inicialmente oculto) -->
+                <div id="completed-appointments-list" class="space-y-3 p-2 border border-gray-200 rounded-lg" style="display: none;">
+                    <!-- Las citas completadas se cargarán aquí, agrupadas por franja horaria -->
+                </div>
+                <!-- FIN SECCIÓN -->
+
+                <!-- SECCIÓN DE CITAS ACTIVAS/PENDIENTES -->
+                <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Citas Activas y Pendientes</h3>
                 <div id="today-appointments-list" class="space-y-3">
-                    <!-- Las citas se cargarán aquí -->
-                    <p class="text-gray-500 text-center">No hay citas para hoy.</p>
+                    <!-- Las citas activas/pendientes se cargarán aquí -->
+                    <p class="text-gray-500 text-center">No hay citas activas para hoy.</p>
+                </div>
+            </div>
+
+            <!-- Nueva Página 1b: Vista de Día de Calendario (Temporal) -->
+            <div id="page-calendar-day-view" class="space-y-4" style="display: none;">
+                <button id="back-to-calendar-btn" class="text-blue-500 hover:text-blue-700 transition flex items-center mb-4 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    <span class="ml-1">Volver al Calendario</span>
+                </button>
+                <h2 class="text-xl font-bold" id="calendar-day-date-title">Citas para el [Día]</h2>
+                
+                <!-- SECCIÓN DE CITAS ACTIVAS/PENDIENTES -->
+                <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Citas Pendientes</h3>
+                <div id="calendar-day-appointments-list" class="space-y-3">
+                    <!-- Las citas activas/pendientes se cargarán aquí -->
+                    <p class="text-gray-500 text-center">No hay citas pendientes para este día.</p>
                 </div>
             </div>
 
@@ -163,103 +217,332 @@
         </nav>
     </div>
 
- <script>
-        const __firebase_config = JSON.stringify({
-            apiKey: "AIzaSyCtKpF8fNApfznKWov-8TtxTsy413rMJWY",
-            authDomain: "barber-shop-a747d.firebaseapp.com",
-            projectId: "barber-shop-a747d",
-            storageBucket: "barber-shop-a747d.firebasestorage.app",
-            messagingSenderId: "249637761566",
-            appId: "1:249637761566:web:e5aa2f0bb3db5f8541740f",
-            measurementId: "G-8Z0DHHSPP8"
-        });
-        const __app_id = 'barber-shop-app';
-        const __initial_auth_token = null;
-    </script>
+    <!-- MODAL DE RE-AGENDAMIENTO (REQUERIDO) -->
+    <div id="reschedule-modal" class="modal-overlay hidden">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-11/12 max-w-sm">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Re-agendar Cita</h3>
+            <p id="reschedule-client-info" class="text-sm text-gray-600 mb-4"></p>
 
-    
+            <div class="space-y-4">
+                
+                <!-- PASO 1: SELECCIÓN DE DÍA -->
+                <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <label for="reschedule-date" class="block text-sm font-medium text-blue-700 mb-2">Paso 1: Seleccionar Día</label>
+                    <input type="date" id="reschedule-date" class="w-full p-2 border border-blue-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white">
+                </div>
+
+                <!-- PASO 2: SELECCIÓN DE FRANJA HORARIA (Filtro UX) -->
+                <div id="time-range-selectors" class="grid grid-cols-3 gap-2 text-center" style="display: none;">
+                    <button data-range="morning" class="time-range-btn p-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition">Mañana</button>
+                    <button data-range="afternoon" class="time-range-btn p-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition">Tarde</button>
+                    <button data-range="evening" class="time-range-btn p-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition">Noche</button>
+                </div>
+                
+                <!-- PASO 3: SELECTOR DE HORA DISPONIBLE -->
+                <div class="bg-white p-3 rounded-lg border border-gray-200" style="display: none;" id="slot-selector-container">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Paso 2: Seleccionar Hora</label>
+                    <div id="available-slots" class="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto p-1">
+                        <!-- Los slots disponibles se cargarán aquí -->
+                    </div>
+                    <p id="slots-message" class="text-sm text-red-500 mt-2 text-center" style="display: none;">No hay horas disponibles en esta franja.</p>
+                </div>
+                
+                <!-- BOTÓN DE CONFIRMACIÓN -->
+                <button id="confirm-reschedule-btn" class="w-full p-3 rounded-lg bg-green-500 text-white font-bold hover:bg-green-600 transition disabled:opacity-50" disabled>
+                    Confirmar Re-agendamiento
+                </button>
+                <button id="cancel-reschedule-btn" class="w-full p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
 
 
-    <!-- Modulo para imports de Firebase -->
+    <!-- Modulo para imports de la lógica de la aplicación -->
     <script type="module">
-        // Importaciones de Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import {
-            getFirestore,
-            collection,
-            onSnapshot,
-            addDoc,
-            getDocs,
-            Timestamp,
-            query,
-            where,
-            doc, // <-- AÑADIDO
-            updateDoc // <-- AÑADIDO
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // --- LÓGICA DE GENERACIÓN DE MOCK DATA (INLINED) ---
+        
+        // --- CONSTANTES ---
+        const DEFAULT_EXAMPLE_SEED_GROUP = "v2_extensive_mock_data";
 
-        import { buildExampleAppointments, DEFAULT_EXAMPLE_SEED_GROUP } from "./mock-data.js";
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const NAMES = ["Javier Pérez", "Manuel García", "Ricardo Soto", "Andrés Castro", "Jorge Varela", "Camila López", "Miguel Torres", "Sofía Rojas"];
+        const SERVICES = [
+            { name: "Corte Clásico", duration: 30, price: 15 },
+            { name: "Corte Fade", duration: 45, price: 20 },
+            { name: "Arreglo de Barba", duration: 20, price: 10 },
+            { name: "Combo Corte + Barba", duration: 60, price: 30 }
+        ];
+        
+        // Para simular IDs únicos en la data local
+        let mockIdCounter = 1; 
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-barber-app';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Función utilitaria para crear una cita
+        function createAppointment(date, time, status, service, phone = "555-1234", elapsedTime = 0) {
+            const dateTime = new Date(date);
+            dateTime.setHours(time.hour, time.minute, 0, 0);
 
-        let db, auth, userId;
+            let startTime = null;
+            if (status === 'in-progress' || status === 'paused') {
+                // Para citas en curso o pausadas, necesitamos una hora de inicio.
+                // Simulamos que empezó hace unos minutos.
+                startTime = new Date(dateTime.getTime() + 5 * 60000); 
+            }
+
+            return {
+                id: `mock-${mockIdCounter++}`, // Asignar ID localmente
+                customerName: NAMES[Math.floor(Math.random() * NAMES.length)],
+                phone: phone,
+                service: service.name,
+                price: service.price,
+                duration: service.duration,
+                dateTime: dateTime,
+                status: status,
+                elapsedTime: elapsedTime, // Tiempo transcurrido en ms (usado si está pausado)
+                startTime: startTime,     // Hora de inicio (usado si está en curso)
+                seedGroup: DEFAULT_EXAMPLE_SEED_GROUP // Marcador para borrado fácil
+            };
+        }
+
+        /**
+         * Genera un set extenso de citas de ejemplo para poblar la base de datos.
+         * @param {Date} referenceDate - La fecha base para calcular "hoy", "ayer" y "mañana".
+         * @returns {Array} Array de objetos de citas.
+         */
+        function buildExampleAppointments({ referenceDate }) {
+            const appointments = [];
+            const today = new Date(referenceDate);
+            today.setHours(0, 0, 0, 0);
+
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            // --- 1. Citas de AYER (Todas completadas) ---
+            for (let i = 0; i < 5; i++) {
+                const time = { hour: 9 + i * 2, minute: [0, 30][Math.floor(Math.random() * 2)] };
+                const service = SERVICES[Math.floor(Math.random() * SERVICES.length)];
+                appointments.push(createAppointment(yesterday, time, 'completed', service));
+            }
+
+            // --- 2. Citas de HOY (Mezcla de estados) ---
+
+            // Pendiente (Mañana)
+            appointments.push(createAppointment(today, { hour: 10, minute: 0 }, 'pending', SERVICES[0], "555-0001"));
+            appointments.push(createAppointment(today, { hour: 11, minute: 30 }, 'pending', SERVICES[3], "555-0002"));
+
+            // En curso (Ahora) - Empezó hace 10 minutos
+            appointments.push(createAppointment(today, { hour: referenceDate.getHours(), minute: referenceDate.getMinutes() + 10 }, 'in-progress', SERVICES[1], "555-0003"));
+
+            // Pausada (Hace una hora) - Pausada con 15 minutos de trabajo
+            const pausedTime = new Date(today);
+            pausedTime.setHours(referenceDate.getHours() - 1, referenceDate.getMinutes());
+            appointments.push(createAppointment(pausedTime, { hour: pausedTime.getHours(), minute: pausedTime.getMinutes() }, 'paused', SERVICES[2], "555-0004", 15 * 60000));
+
+            // Completada (Hoy temprano)
+            appointments.push(createAppointment(today, { hour: 8, minute: 0 }, 'completed', SERVICES[0], "555-0005"));
+
+            // --- 3. Citas de MAÑANA (Todas pendientes) ---
+            for (let i = 0; i < 5; i++) {
+                const time = { hour: 14 + i, minute: [0, 30][Math.floor(Math.random() * 2)] };
+                const service = SERVICES[Math.floor(Math.random() * SERVICES.length)];
+                appointments.push(createAppointment(tomorrow, time, 'pending', service, `555-10${i}`));
+            }
+            
+            // --- 4. Citas de la próxima semana (Pendientes) ---
+            const nextWeek = new Date(today);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            appointments.push(createAppointment(nextWeek, { hour: 9, minute: 0 }, 'pending', SERVICES[0], "555-2001"));
+            appointments.push(createAppointment(nextWeek, { hour: 16, minute: 30 }, 'pending', SERVICES[3], "555-2002"));
+
+
+            console.log(`Generadas ${appointments.length} citas de ejemplo.`);
+            return appointments;
+        }
+
+        // --- FIN LÓGICA DE GENERACIÓN DE MOCK DATA (INLINED) ---
+
+
+        let userId = "local_user_12345";
         let allAppointments = []; // Caché local de todas las citas
         let currentDisplayDate = new Date(); // Para el calendario
         let currentSelectedDate = new Date(); // Para la vista "Hoy"
-        let timerStates = new Map(); // <-- AÑADIDO: Para manejar estado de cronómetros
+        let timerStates = new Map(); // Para manejar estado de cronómetros
+
+        // --- ESTADO DEL MODAL DE RE-AGENDAMIENTO ---
+        let rescheduleState = {
+            appointmentId: null,
+            selectedDate: null, // Date object
+            selectedSlot: null, // Date object (hora de inicio)
+            availableSlots: {} // Slots generados para el día seleccionado
+        };
+
+        // --- REGLAS DE NEGOCIO ---
+        // Duración total del bloque de cita (incluye servicio, tolerancia y descanso)
+        const SLOT_DURATION_MINUTES = 60; 
+        const WORK_HOURS = {
+            startHour: 8, // 8:00 AM
+            endHour: 20, // 8:00 PM
+            morningEnd: 12, // 12:00 PM
+            afternoonEnd: 18, // 6:00 PM
+        };
+
+
+        // --- FUNCIONES DE UTILIDAD (Reemplazo de alert/confirm) ---
+
+        function displayStatusMessage(message, isError = false) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-green-100', 'text-green-800');
+            statusEl.classList.add('opacity-100');
+            
+            if (isError) {
+                statusEl.classList.add('bg-red-100', 'text-red-800');
+            } else {
+                statusEl.classList.add('bg-green-100', 'text-green-800');
+            }
+            
+            setTimeout(() => {
+                statusEl.classList.remove('opacity-100');
+                statusEl.classList.add('hidden');
+            }, 5000); // El mensaje desaparece después de 5 segundos
+        }
+
+
+        // --- FUNCIÓN CENTRAL DE REFRESH UI ---
+
+        // Función para actualizar el estado del cronómetro en el mapa local
+        function updateTimerState(apt) {
+            if (apt.status === 'in-progress' || apt.status === 'paused') {
+                timerStates.set(apt.id, {
+                    status: apt.status,
+                    // Convertir Date a timestamp MS
+                    startTime: apt.startTime ? apt.startTime.getTime() : null, 
+                    elapsedTime: apt.elapsedTime || 0
+                });
+            } else {
+                timerStates.delete(apt.id);
+            }
+        }
+        
+        // Reemplaza a 'listenToAppointments', ya que la data es local
+        function refreshUI() {
+            // 1. Filtrar citas activas y ordenar
+            let activeAppointments = allAppointments.filter(apt => apt.status !== 'cancelled');
+            activeAppointments.sort((a, b) => a.dateTime - b.dateTime);
+            
+            // 2. Actualizar las vistas que dependen de estos datos
+            renderTodayView(activeAppointments);
+            renderCalendar(currentDisplayDate); 
+            updateDashboard(); 
+        }
 
         // --- INICIALIZACIÓN DE LA APP ---
         
-        async function initApp() {
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
+        function setupCompletedToggle() {
+            const toggleButton = document.getElementById('completed-appointments-toggle');
+            const listContainer = document.getElementById('completed-appointments-list');
+            const toggleIcon = document.getElementById('completed-toggle-icon');
 
-                // Autenticación
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        document.getElementById('userIdDisplay').textContent = userId;
-                        // Ya estamos autenticados, empezamos a escuchar citas
-                        listenToAppointments();
+            if (toggleButton) {
+                toggleButton.addEventListener('click', () => {
+                    const isHidden = listContainer.style.display === 'none';
+                    if (isHidden) {
+                        listContainer.style.display = 'block';
+                        toggleIcon.classList.add('rotate-180'); // Rotar para apuntar hacia arriba
+                    } else {
+                        listContainer.style.display = 'none';
+                        toggleIcon.classList.remove('rotate-180'); // Devolver a apuntar hacia abajo
                     }
                 });
+            }
+        }
 
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
+        function setupCalendarDayViewListeners() {
+            document.getElementById('back-to-calendar-btn').addEventListener('click', () => {
+                // Ocultar vista de día y mostrar calendario
+                document.getElementById('page-calendar-day-view').style.display = 'none';
+                document.getElementById('page-calendar').style.display = 'block';
+                // La barra de navegación permanece visible, pero debemos asegurarnos que el botón 'Calendario' esté activo
+                document.querySelector('button[data-page="calendar"]').classList.replace('text-gray-500', 'text-blue-500');
+                document.querySelector('button[data-page="today"]').classList.replace('text-blue-500', 'text-gray-500');
+
+
+                // Asegurarse de que el título principal vuelva al Calendario
+                document.getElementById('header-title').textContent = 'Calendario';
+            });
+            
+            // Reutilizar setupActionListeners para manejar las acciones (Reschedule, Cancel, Call)
+            const listElement = document.getElementById('calendar-day-appointments-list');
+            
+            listElement.addEventListener('click', (e) => {
+                const card = e.target.closest('.appointment-card');
+                if (!card) return;
+
+                const actionButton = e.target.closest('.action-btn');
+
+                if (actionButton) {
+                    // Se hizo clic en un botón de acción
+                    e.stopPropagation(); 
+                    const action = actionButton.dataset.action;
+                    const id = actionButton.dataset.id;
+                    
+                    // Validación de seguridad adicional: no permitir iniciar desde esta vista
+                    if (action === 'start') {
+                        displayStatusMessage("Acción 'Iniciar' no permitida desde la vista de calendario.", true);
+                        return;
+                    }
+                    
+                    handleAppointmentAction(action, id);
                 } else {
-                    await signInAnonymously(auth);
+                    // Se hizo clic en la tarjeta (Mostrar/ocultar menú de acciones)
+                    toggleActionsMenu(card);
                 }
+            });
+        }
+
+
+        async function initApp() {
+            try {
+                // Simulación de autenticación local
+                document.getElementById('userIdDisplay').textContent = userId;
 
                 // Configuración inicial de las vistas
                 setupNavigation();
                 setupCalendar();
                 setupDashboard();
                 setupTodayView();
-                setupActionListeners(); // <-- AÑADIDO: Listener para acciones
+                setupActionListeners(); 
+                setupCompletedToggle(); // Configurar la lógica de toggle
+                setupRescheduleModalListeners(); // Configurar lógica del modal
+                setupCalendarDayViewListeners(); // Configurar lógica de la vista temporal
 
+                // Listeners para los botones de datos
                 document.getElementById('seed-data').addEventListener('click', seedMockData);
+                document.getElementById('reset-data').addEventListener('click', resetData); 
+                
+                // Cargar data inicial (mock data) automáticamente al cargar la app
+                seedMockData();
 
-                setInterval(updateClockAndTimers, 1000); // <-- MODIFICADO: Intervalo para reloj y cronómetros
+                setInterval(updateClockAndTimers, 1000); 
 
             } catch (error) {
-                console.error("Error al inicializar Firebase:", error);
-                document.getElementById('header-title').textContent = "Error de Conexión";
+                console.error("Error al inicializar la App:", error);
+                document.getElementById('header-title').textContent = "Error de Inicialización";
             }
         }
 
         // --- LÓGICA DE NAVEGÁCIÓN ---
-
 
         function setupNavigation() {
             const navButtons = document.querySelectorAll('.nav-btn');
             const pages = {
                 today: document.getElementById('page-today'),
                 calendar: document.getElementById('page-calendar'),
-                dashboard: document.getElementById('page-dashboard')
+                dashboard: document.getElementById('page-dashboard'),
+                calendarDay: document.getElementById('page-calendar-day-view')
             };
             const titles = {
                 today: 'Citas de Hoy',
@@ -271,11 +554,14 @@
                 button.addEventListener('click', () => {
                     const pageName = button.dataset.page;
 
-                    // Ocultar todas las páginas
+                    // Ocultar todas las páginas, incluida la temporal
                     Object.values(pages).forEach(page => page.style.display = 'none');
                     
                     // Mostrar la página seleccionada
                     pages[pageName].style.display = 'block';
+
+                    // Asegurar que la navegación inferior esté visible
+                    document.querySelector('nav').style.display = 'flex';
 
                     // Actualizar el título
                     document.getElementById('header-title').textContent = titles[pageName];
@@ -287,11 +573,10 @@
                     // Refrescar vistas por si los datos cambiaron
                     if (pageName === 'calendar') renderCalendar(currentDisplayDate);
                     if (pageName === 'dashboard') updateDashboard();
-                    // CORRECCIÓN: '===Next:' cambiado a '=== 'today''
                     if (pageName === 'today') {
                         currentSelectedDate = new Date(); // Resetea al día de "Hoy"
                         setupTodayView(); // Actualiza el título
-                        renderTodayView(allAppointments); // Re-renderiza
+                        refreshUI(); // Re-renderiza con la data actual
                     }
                 });
             });
@@ -300,6 +585,7 @@
         // --- MANEJO DE ACCIONES DE CITAS ---
 
         function setupActionListeners() {
+            // Listener para la vista principal 'Hoy'
             const listElement = document.getElementById('today-appointments-list');
             
             listElement.addEventListener('click', (e) => {
@@ -325,9 +611,7 @@
             const actions = clickedCard.querySelector('.appointment-actions');
             if (!actions) return;
 
-            const isHidden = actions.classList.contains('hidden');
-
-            // Ocultar todos los menús de acción
+            // Ocultar todos los menús de acción, excepto si ya está visible el que se clickeó
             document.querySelectorAll('.appointment-actions').forEach(menu => {
                 if (menu !== actions) {
                     menu.classList.add('hidden');
@@ -340,9 +624,8 @@
             actions.classList.toggle('flex');
         }
 
-        // --- MODIFICADO: Funciones de Cronómetro y Reloj ---
+        // --- Cronómetro y Reloj ---
         
-        // Nueva función solo para formatear milisegundos a MM:SS
         function formatMilliseconds(totalMilliseconds) {
             const totalSeconds = Math.floor(totalMilliseconds / 1000);
             const minutes = Math.floor(totalSeconds / 60);
@@ -351,7 +634,6 @@
             return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
-        // Renombrada: esta función ahora solo CALCULA el tiempo transcurrido
         function getElapsedTimeMs(elapsedTime, startTime, status) {
             let totalMilliseconds = elapsedTime || 0;
             if (status === 'in-progress' && startTime) {
@@ -370,22 +652,20 @@
             }
 
             // 2. Actualizar Cronómetros
-            // Solo actualiza si la vista "Hoy" está visible
-            if (document.getElementById('page-today').style.display !== 'block') {
+            const activePage = document.querySelector('main > div:not([style*="display: none"])');
+            if (!activePage || (activePage.id !== 'page-today' && activePage.id !== 'page-calendar-day-view')) {
                 return;
             }
 
+            // Usamos querySelectorAll para buscar en ambas listas (Hoy y Vista temporal)
             document.querySelectorAll('.timer-display').forEach(timerEl => {
                 const id = timerEl.dataset.id;
                 const state = timerStates.get(id);
                 
-                // La lógica de actualización ahora está aquí:
                 if (state) {
-                    // Calcula el tiempo transcurrido CADA SEGUNDO
                     const elapsedMs = getElapsedTimeMs(state.elapsedTime, state.startTime, state.status);
                     timerEl.textContent = formatMilliseconds(elapsedMs);
                     
-                    // Asegurarnos de que el color es correcto (verde si 'in-progress', amarillo si 'paused')
                     if (state.status === 'in-progress') {
                         timerEl.classList.remove('text-yellow-700');
                         timerEl.classList.add('text-green-700');
@@ -398,8 +678,12 @@
         }
         // --- Fin Funciones de Cronómetro ---
 
-        async function handleAppointmentAction(action, id) { // <-- Convertido a async
-            const appointmentRef = doc(db, getAppointmentsCollection().path, id);
+        function handleAppointmentAction(action, id) { 
+            // 1. Encontrar la cita localmente
+            const appointmentIndex = allAppointments.findIndex(a => a.id === id);
+            if (appointmentIndex === -1) return;
+
+            const appointment = allAppointments[appointmentIndex];
             const state = timerStates.get(id) || { elapsedTime: 0 };
             const now = Date.now();
             
@@ -409,124 +693,66 @@
             try {
                 switch (action) {
                     case 'call':
-                        const appointment = allAppointments.find(a => a.id === id);
-                        console.log(`Llamando a ${appointment.customerName} al ${appointment.phone}`);
                         if (appointment.phone) {
-                            // window.location.href = `tel:${appointment.phone}`; // Descomentar para producción
                             simulationMessage = `Simulando llamada a: ${appointment.phone}`;
                         } else {
                             simulationMessage = 'Este cliente no tiene un número de teléfono registrado.';
                         }
                         break;
                     case 'start':
-                        await updateDoc(appointmentRef, { 
-                            status: 'in-progress', 
-                            startTime: Timestamp.now(), 
-                            elapsedTime: 0 
-                        });
+                        appointment.status = 'in-progress';
+                        appointment.startTime = new Date(); 
+                        appointment.elapsedTime = 0;
                         simulationMessage = 'Corte iniciado';
                         break;
                     case 'pause':
+                        // Calcular el tiempo transcurrido total
                         const newElapsedTime = (state.elapsedTime || 0) + (now - (state.startTime || now));
-                        await updateDoc(appointmentRef, { 
-                            status: 'paused', 
-                            elapsedTime: newElapsedTime, 
-                            startTime: null 
-                        });
+                        appointment.status = 'paused';
+                        appointment.elapsedTime = newElapsedTime; 
+                        appointment.startTime = null;
                         simulationMessage = 'Corte pausado';
                         break;
                     case 'resume':
-                        await updateDoc(appointmentRef, { 
-                            status: 'in-progress', 
-                            startTime: Timestamp.now(), 
-                            elapsedTime: state.elapsedTime || 0 
-                        });
+                        appointment.status = 'in-progress';
+                        appointment.startTime = new Date(); 
+                        // elapsedTime conserva el valor previo
                         simulationMessage = 'Corte reanudado';
                         break;
                     case 'finish':
-                        await updateDoc(appointmentRef, { 
-                            status: 'completed', 
-                            startTime: null, 
-                            elapsedTime: 0 // Resetea el tiempo
-                        });
+                        appointment.status = 'completed';
+                        appointment.startTime = null; 
+                        appointment.elapsedTime = 0; // Resetear tiempo al finalizar
                         simulationMessage = 'Corte finalizado';
                         break;
                     case 'reschedule':
-                        simulationMessage = 'Abriendo UI para re-agendar...';
-                        break;
+                        // ABRIR MODAL DE RE-AGENDAMIENTO
+                        openRescheduleModal(id, appointment);
+                        return; // Salir para no refrescar la UI ni mostrar mensaje inmediatamente
                     case 'cancel':
-                        await updateDoc(appointmentRef, {
-                            status: 'cancelled',
-                            // Opcionalmente, podrías borrar el doc: await deleteDoc(appointmentRef);
-                        });
+                        appointment.status = 'cancelled';
                         simulationMessage = 'Cita cancelada';
                         break;
                 }
+
+                // 2. Actualizar estado y UI después de la modificación local
+                updateTimerState(appointment); 
+                refreshUI();
+
+                // Si la acción se ejecutó desde la vista temporal, refrescar esa vista también
+                const activePage = document.querySelector('main > div:not([style*="display: none"])');
+                if (activePage && activePage.id === 'page-calendar-day-view') {
+                    renderCalendarDayView(currentSelectedDate, allAppointments);
+                }
+
+                displayStatusMessage(simulationMessage, false);
+
             } catch (error) {
                 console.error("Error al actualizar la cita: ", error);
-                simulationMessage = "Error al ejecutar la acción.";
+                displayStatusMessage("Error al ejecutar la acción.", true);
             }
-            
-            if (simulationMessage) {
-                console.log(simulationMessage);
-            }
-            
-            // No necesitamos re-renderizar manualmente
-            // onSnapshot() detectará el cambio y lo hará por nosotros.
         }
 
-
-        // --- LÓGICA DE DATOS (FIRESTORE) ---
-
-        function getAppointmentsCollection() {
-            // Usamos una colección pública compartida para este prototipo
-            // En producción, esto podría ser /barbershops/{shopId}/appointments
-            return collection(db, `artifacts/${appId}/public/data/appointments`);
-        }
-
-        function listenToAppointments() {
-            const appointmentsCol = getAppointmentsCollection();
-            
-            // Escuchamos cambios en tiempo real
-            onSnapshot(appointmentsCol, (snapshot) => {
-                allAppointments = snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    const apt = {
-                        id: doc.id,
-                        ...data,
-                        // Convertimos Timestamp de Firestore a Date de JS
-                        dateTime: data.dateTime.toDate(),
-                        startTime: data.startTime ? data.startTime.toDate() : null // AÑADIDO
-                    };
-
-                    // Actualizar el mapa de estado de cronómetros
-                    if (apt.status === 'in-progress' || apt.status === 'paused') {
-                        timerStates.set(apt.id, {
-                            status: apt.status,
-                            startTime: apt.startTime ? apt.startTime.getTime() : null,
-                            elapsedTime: apt.elapsedTime || 0
-                        });
-                    } else {
-                        timerStates.delete(apt.id);
-                    }
-                    
-                    return apt;
-                });
-                
-                // Filtramos las canceladas
-                allAppointments = allAppointments.filter(apt => apt.status !== 'cancelled');
-                
-                // Ordenar citas por fecha
-                allAppointments.sort((a, b) => a.dateTime - b.dateTime);
-
-                // Actualizar las vistas que dependen de estos datos
-                renderTodayView(allAppointments);
-                renderCalendar(currentDisplayDate); // Re-renderizar calendario con marcadores
-                updateDashboard(); // Actualizar KPIs
-            }, (error) => {
-                console.error("Error al escuchar citas: ", error);
-            });
-        }
 
         // --- VISTA HOY ---
 
@@ -540,7 +766,7 @@
             if (currentSelectedDate.toDateString() === today.toDateString()) {
                 headerTitle.textContent = "Citas de Hoy";
             } else {
-                headerTitle.textContent = currentSelectedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+                headerTitle.textContent = currentSelectedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
             }
         }
 
@@ -551,63 +777,157 @@
                 apt.dateTime.getFullYear() === currentSelectedDate.getFullYear()
             );
 
-            const listElement = document.getElementById('today-appointments-list');
-            listElement.innerHTML = ''; // Limpiar lista
+            // Separar citas en Completadas y Activas (Pendientes/En curso/Pausadas)
+            const completedApts = todayAppointments.filter(apt => apt.status === 'completed');
+            const activeApts = todayAppointments.filter(apt => apt.status !== 'completed');
+            
+            const activeListElement = document.getElementById('today-appointments-list');
+            const completedListElement = document.getElementById('completed-appointments-list');
+            const completedCountElement = document.getElementById('completed-count');
 
-            if (todayAppointments.length === 0) {
-                // Mensaje más genérico
-                listElement.innerHTML = '<p class="text-gray-500 text-center">No hay citas para este día.</p>';
+            // --- 1. Renderizar citas completadas (Plegable) ---
+            completedCountElement.textContent = completedApts.length;
+            completedListElement.innerHTML = ''; // Limpiar lista completada
+
+            if (completedApts.length > 0) {
+                // Agrupar citas completadas por hora del día
+                const completedMorningApts = completedApts.filter(apt => apt.dateTime.getHours() < 12);
+                const completedAfternoonApts = completedApts.filter(apt => apt.dateTime.getHours() >= 12 && apt.dateTime.getHours() < 18);
+                const completedEveningApts = completedApts.filter(apt => apt.dateTime.getHours() >= 18);
+                
+                let completedHtml = '';
+                
+                if (completedMorningApts.length > 0) {
+                    completedHtml += '<h4 class="font-medium text-sm text-gray-500 mt-2 mb-1">Mañana (Completadas)</h4>';
+                    completedMorningApts.forEach(apt => completedHtml += createAppointmentCardHTML(apt, 'today'));
+                }
+                if (completedAfternoonApts.length > 0) {
+                    completedHtml += '<h4 class="font-medium text-sm text-gray-500 mt-2 mb-1">Tarde (Completadas)</h4>';
+                    completedAfternoonApts.forEach(apt => completedHtml += createAppointmentCardHTML(apt, 'today'));
+                }
+                if (completedEveningApts.length > 0) {
+                    completedHtml += '<h4 class="font-medium text-sm text-gray-500 mt-2 mb-1">Noche (Completadas)</h4>';
+                    completedEveningApts.forEach(apt => completedHtml += createAppointmentCardHTML(apt, 'today'));
+                }
+
+                completedListElement.innerHTML = completedHtml;
+
+            } else {
+                completedListElement.innerHTML = '<p class="text-gray-500 text-center text-sm">No hay citas completadas para este día.</p>';
+            }
+
+            // --- 2. Renderizar citas activas (Pendientes/En curso/Pausadas) ---
+            activeListElement.innerHTML = ''; // Limpiar lista activa
+
+            if (activeApts.length === 0) {
+                activeListElement.innerHTML = '<p class="text-gray-500 text-center">No hay citas activas para hoy.</p>';
                 return;
             }
             
-            // --- INICIO DE MODIFICACIÓN: Agrupar citas ---
+            // Agrupar citas activas por hora del día
+            const activeMorningApts = activeApts.filter(apt => apt.dateTime.getHours() < 12);
+            const activeAfternoonApts = activeApts.filter(apt => apt.dateTime.getHours() >= 12 && apt.dateTime.getHours() < 18);
+            const activeEveningApts = activeApts.filter(apt => apt.dateTime.getHours() >= 18);
 
-            // 1. Agrupar citas
-            const morningApts = todayAppointments.filter(apt => apt.dateTime.getHours() < 12);
-            const afternoonApts = todayAppointments.filter(apt => apt.dateTime.getHours() >= 12 && apt.dateTime.getHours() < 18);
-            const eveningApts = todayAppointments.filter(apt => apt.dateTime.getHours() >= 18);
+            let activeContentHtml = '';
 
-            // 2. Renderizar los grupos
-            let contentHtml = '';
-
-            if (morningApts.length > 0) {
-                contentHtml += '<h3 class="text-md font-semibold text-gray-500 mt-4 mb-2">Mañana</h3>';
-                morningApts.forEach(apt => contentHtml += createAppointmentCardHTML(apt));
+            if (activeMorningApts.length > 0) {
+                activeContentHtml += '<h3 class="text-md font-semibold text-gray-500 mt-4 mb-2">Mañana</h3>';
+                activeMorningApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'today'));
             }
 
-            if (afternoonApts.length > 0) {
-                contentHtml += '<h3 class="text-md font-semibold text-gray-500 mt-4 mb-2">Tarde</h3>';
-                afternoonApts.forEach(apt => contentHtml += createAppointmentCardHTML(apt));
+            if (activeAfternoonApts.length > 0) {
+                activeContentHtml += '<h3 class="text-md font-semibold text-gray-500 mt-4 mb-2">Tarde</h3>';
+                activeAfternoonApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'today'));
             }
 
-            if (eveningApts.length > 0) {
-                contentHtml += '<h3 class="text-md font-semibold text-gray-500 mt-4 mb-2">Noche</h3>';
-                eveningApts.forEach(apt => contentHtml += createAppointmentCardHTML(apt));
+            if (activeEveningApts.length > 0) {
+                activeContentHtml += '<h3 class="text-md font-semibold text-gray-500 mt-4 mb-2">Noche</h3>';
+                activeEveningApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'today'));
             }
             
-            listElement.innerHTML = contentHtml;
-            // --- FIN DE MODIFICACIÓN ---
+            activeListElement.innerHTML = activeContentHtml;
         }
 
-        // --- AÑADIDO: Función auxiliar para crear el HTML de la tarjeta ---
-        // (Extraída de la lógica anterior de renderTodayView para reutilizarla)
-        function createAppointmentCardHTML(apt) {
+        // NUEVA FUNCIÓN: Renderizado para la vista temporal del calendario
+        function renderCalendarDayView(date, appointments) {
+            currentSelectedDate = date; // Se actualiza la fecha global para que las acciones usen la fecha correcta
+            
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('calendar-day-date-title').textContent = `Citas para el ${date.toLocaleDateString('es-ES', options)}`;
+
+            const dayAppointments = appointments.filter(apt => 
+                apt.dateTime.getDate() === date.getDate() &&
+                apt.dateTime.getMonth() === date.getMonth() &&
+                apt.dateTime.getFullYear() === date.getFullYear() &&
+                // En esta vista solo se muestran las activas/pendientes
+                apt.status !== 'completed' && apt.status !== 'cancelled' 
+            );
+
+            const listElement = document.getElementById('calendar-day-appointments-list');
+            listElement.innerHTML = ''; // Limpiar lista
+
+            if (dayAppointments.length === 0) {
+                listElement.innerHTML = '<p class="text-gray-500 text-center">No hay citas pendientes para este día.</p>';
+                return;
+            }
+            
+            // Agrupar citas activas por hora del día
+            const activeMorningApts = dayAppointments.filter(apt => apt.dateTime.getHours() < WORK_HOURS.morningEnd);
+            const activeAfternoonApts = dayAppointments.filter(apt => apt.dateTime.getHours() >= WORK_HOURS.morningEnd && apt.dateTime.getHours() < WORK_HOURS.afternoonEnd);
+            const activeEveningApts = dayAppointments.filter(apt => apt.dateTime.getHours() >= WORK_HOURS.afternoonEnd);
+
+            let activeContentHtml = '';
+
+            if (activeMorningApts.length > 0) {
+                activeContentHtml += '<h4 class="font-medium text-sm text-gray-500 mt-4 mb-2">Mañana</h4>';
+                // Pasar contexto 'calendar-day' para ocultar el botón 'start'
+                activeMorningApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'calendar-day')); 
+            }
+
+            if (activeAfternoonApts.length > 0) {
+                activeContentHtml += '<h4 class="font-medium text-sm text-gray-500 mt-4 mb-2">Tarde</h4>';
+                activeAfternoonApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'calendar-day'));
+            }
+
+            if (activeEveningApts.length > 0) {
+                activeContentHtml += '<h4 class="font-medium text-sm text-gray-500 mt-4 mb-2">Noche</h4>';
+                activeEveningApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'calendar-day'));
+            }
+            
+            listElement.innerHTML = activeContentHtml;
+        }
+
+        function createAppointmentCardHTML(apt, context = 'today') {
             // --- Cálculo de hora de fin ---
             const timeStr = apt.dateTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-            const endTime = new Date(apt.dateTime.getTime() + apt.duration * 60000);
+            // Utilizamos la duración fija del SLOT_DURATION_MINUTES (60 min) para el fin visible en el slot
+            const endTime = new Date(apt.dateTime.getTime() + SLOT_DURATION_MINUTES * 60000); 
             const endTimeStr = endTime.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
             // --- Lógica de Acciones Dinámicas ---
             let actionsHtml = '';
+            let statusBadge = '';
+            // Se actualizó la acción de re-agendar para que abra el modal
             const baseBtnClass = 'action-btn p-2 rounded-full shadow-lg text-white transition-transform duration-150 ease-in-out';
             const btnData = `data-id="${apt.id}"`;
 
             switch (apt.status) {
                 case 'pending':
+                    statusBadge = '<span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blue-600 bg-blue-200">Pendiente</span>';
+                    
+                    let startButton = '';
+                    // Mostrar 'Start' SOLO si el contexto es 'today'
+                    if (context === 'today') {
+                        startButton = `
+                            <button ${btnData} data-action="start" class="${baseBtnClass} bg-green-500 hover:bg-green-600" title="Iniciar Corte">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="pointer-events-none"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
+                            </button>
+                        `;
+                    }
+
                     actionsHtml = `
-                        <button ${btnData} data-action="start" class="${baseBtnClass} bg-green-500 hover:bg-green-600" title="Iniciar Corte">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="pointer-events-none"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
-                        </button>
+                        ${startButton}
                         <button ${btnData} data-action="reschedule" class="${baseBtnClass} bg-blue-500 hover:bg-blue-600" title="Re-agendar">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="pointer-events-none"><path d="M11 6.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1z"/><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
                         </button>
@@ -620,24 +940,30 @@
                     `;
                     break;
                 case 'in-progress':
+                    statusBadge = '<span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-green-600 bg-green-200">En Curso</span>';
                     actionsHtml = `
                         <button ${btnData} data-action="pause" class="${baseBtnClass} bg-yellow-500 hover:bg-yellow-600" title="Pausar Sesión">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="pointer-events-none"><path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5zm4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5z"/></svg>
                         </button>
-                        <button ${btnData} data-action="finish" class="${baseBtnClass} bg-green-500 hover:bg-green-600" title="Finalizar Sesión">
+                        <button ${btnData} data-action="finish" class="${baseBtnClass} bg-gray-700 hover:bg-gray-800" title="Finalizar Sesión">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="pointer-events-none"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022z"/></svg>
                         </button>
                     `;
                     break;
                 case 'paused':
+                    statusBadge = '<span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-yellow-600 bg-yellow-200">Pausada</span>';
                     actionsHtml = `
                         <button ${btnData} data-action="resume" class="${baseBtnClass} bg-green-500 hover:bg-green-600" title="Reanudar Sesión">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="pointer-events-none"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
                         </button>
-                        <button ${btnData} data-action="finish" class="${baseBtnClass} bg-green-500 hover:bg-green-600" title="Finalizar Sesión">
+                        <button ${btnData} data-action="finish" class="${baseBtnClass} bg-gray-700 hover:bg-gray-800" title="Finalizar Sesión">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="pointer-events-none"><path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022z"/></svg>
                         </button>
                     `;
+                    break;
+                case 'completed':
+                    statusBadge = '<span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-gray-600 bg-gray-200">Completada</span>';
+                    actionsHtml = ``; // Sin acciones para completadas
                     break;
             }
 
@@ -645,34 +971,256 @@
             const timerState = timerStates.get(apt.id);
             const initialElapsedMs = timerState ? getElapsedTimeMs(timerState.elapsedTime, timerState.startTime, timerState.status) : 0;
             
+            // Las citas completadas no muestran el menú de acciones al hacer clic
+            const cursorClass = apt.status === 'completed' ? 'cursor-default' : 'cursor-pointer hover:shadow-md transition-shadow';
+            const pointerEventsClass = apt.status === 'completed' ? 'pointer-events-auto' : 'pointer-events-none';
+
             return `
-                <div class="appointment-card bg-white p-4 rounded-lg shadow border border-gray-200 flex items-center space-x-4 relative cursor-pointer hover:shadow-md transition-shadow">
-                    <div class="text-center w-16 flex-shrink-0 pointer-events-none">
+                <div class="appointment-card bg-white p-4 rounded-lg shadow border border-gray-200 flex items-center space-x-4 relative ${cursorClass}">
+                    <div class="text-center w-16 flex-shrink-0 ${pointerEventsClass}">
                         <div class="text-lg font-bold text-blue-600">${timeStr}</div>
                         <div class="text-sm text-gray-400">a</div>
                         <div class="text-lg font-bold text-gray-500">${endTimeStr}</div>
                     </div>
-                    <div class="flex-1 border-l border-gray-200 pl-4 pointer-events-none">
+                    <div class="flex-1 border-l border-gray-200 pl-4 ${pointerEventsClass}">
                         <h3 class="font-semibold text-gray-800">${apt.customerName}</h3>
-                        <p class="text-sm text-gray-600">${apt.service}</p>
-                        <p class="text-xs text-gray-400 font-mono capitalize">Estado: ${apt.status}</p>
-                        ${(timerState) ? `
-                            <div class="timer-display mt-1 bg-gray-100 px-2 py-1 rounded text-sm font-mono
+                        <p class="text-sm text-gray-600">${apt.service} ($${apt.price})</p>
+                        <div class="mt-1">${statusBadge}</div>
+                        ${(timerState && apt.status !== 'completed') ? `
+                            <div class="timer-display mt-2 bg-gray-100 px-2 py-1 rounded-md text-base font-mono
                                 ${timerState.status === 'in-progress' ? 'text-green-700' : 'text-yellow-700'}"
                                  data-id="${apt.id}">
                                 ${formatMilliseconds(initialElapsedMs)}
                             </div>
                         ` : ''}
                     </div>
-                    <div class="text-lg font-bold text-green-600 flex-shrink-0 pointer-events-none">$${apt.price}</div>
+                    <div class="text-lg font-bold text-green-600 flex-shrink-0 ${pointerEventsClass}"></div>
                     <!-- Contenedor de Acciones (Oculto por defecto) -->
-                    <div class="appointment-actions hidden absolute bottom-2 right-2 flex flex-col gap-2 z-20">
+                    <div class="appointment-actions ${apt.status === 'completed' ? 'hidden' : 'hidden'} absolute bottom-2 right-2 flex flex-col gap-2 z-20">
                         ${actionsHtml}
                     </div>
                 </div>
             `;
         }
-        // --- FIN DE FUNCIÓN AUXILIAR ---
+
+        // --- LÓGICA DEL MODAL DE RE-AGENDAMIENTO ---
+        
+        // Cierra el modal y resetea el estado
+        function closeRescheduleModal() {
+            document.getElementById('reschedule-modal').classList.add('hidden');
+            rescheduleState.appointmentId = null;
+            rescheduleState.selectedDate = null;
+            rescheduleState.selectedSlot = null;
+            rescheduleState.availableSlots = {};
+            // Deseleccionar botones y limpiar UI
+            document.getElementById('time-range-selectors').style.display = 'none';
+            document.getElementById('slot-selector-container').style.display = 'none';
+            document.getElementById('available-slots').innerHTML = '';
+            document.getElementById('confirm-reschedule-btn').disabled = true;
+            document.querySelectorAll('.time-range-btn').forEach(btn => btn.classList.remove('bg-blue-500', 'text-white', 'hover:bg-blue-600'));
+        }
+
+        function openRescheduleModal(id, appointment) {
+            // Inicializar estado del modal
+            rescheduleState.appointmentId = id;
+            rescheduleState.selectedDate = null;
+            rescheduleState.selectedSlot = null;
+
+            // Mostrar información de la cita
+            const clientInfo = `${appointment.customerName} - ${appointment.service} ($${appointment.price})`;
+            document.getElementById('reschedule-client-info').textContent = clientInfo;
+
+            // Forzar la fecha mínima de hoy
+            const todayISO = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('reschedule-date');
+            dateInput.min = todayISO;
+            dateInput.value = ''; // Limpiar la fecha previa
+            
+            // Ocultar selectores de hora inicialmente
+            document.getElementById('time-range-selectors').style.display = 'none';
+            document.getElementById('slot-selector-container').style.display = 'none';
+            document.getElementById('available-slots').innerHTML = '';
+            document.getElementById('confirm-reschedule-btn').disabled = true;
+
+            // Mostrar el modal
+            document.getElementById('reschedule-modal').classList.remove('hidden');
+        }
+
+        function getAvailableSlotsForDay(targetDate) {
+            const slots = [];
+            const existingAppointments = allAppointments.filter(apt => 
+                apt.dateTime.toDateString() === targetDate.toDateString() && apt.status !== 'cancelled'
+            );
+
+            // Iniciar en la hora de inicio (8:00 AM)
+            let currentTime = new Date(targetDate);
+            currentTime.setHours(WORK_HOURS.startHour, 0, 0, 0);
+
+            // Terminar una hora antes de la hora de cierre (para asegurar 60 min de slot)
+            const endTimeLimit = new Date(targetDate);
+            endTimeLimit.setHours(WORK_HOURS.endHour, 0, 0, 0);
+
+            // Generar todos los posibles slots de inicio (60 minutos de paso)
+            while (currentTime.getTime() < endTimeLimit.getTime()) {
+                let isAvailable = true;
+                const slotStart = new Date(currentTime);
+                const slotEnd = new Date(slotStart.getTime() + SLOT_DURATION_MINUTES * 60000); // 60 minutos después
+
+                // Comprobar solapamiento con citas existentes
+                for (const apt of existingAppointments) {
+                    const aptStart = apt.dateTime;
+                    const aptEnd = new Date(aptStart.getTime() + SLOT_DURATION_MINUTES * 60000); // Asumimos 60 min de duración del bloque ocupado
+
+                    // Si el nuevo slot se solapa con la cita existente
+                    // Solapamiento ocurre si (StartA < EndB) AND (EndA > StartB)
+                    if (slotStart.getTime() < aptEnd.getTime() && slotEnd.getTime() > aptStart.getTime()) {
+                        isAvailable = false;
+                        break;
+                    }
+                }
+
+                if (isAvailable) {
+                    slots.push(slotStart);
+                }
+
+                // Avanzar al siguiente bloque de 60 minutos
+                currentTime = slotEnd; 
+            }
+            
+            // Agrupar slots por franja horaria
+            const groupedSlots = { morning: [], afternoon: [], evening: [] };
+            slots.forEach(slot => {
+                const hour = slot.getHours();
+                if (hour < WORK_HOURS.morningEnd) {
+                    groupedSlots.morning.push(slot);
+                } else if (hour < WORK_HOURS.afternoonEnd) {
+                    groupedSlots.afternoon.push(slot);
+                } else {
+                    groupedSlots.evening.push(slot);
+                }
+            });
+
+            return groupedSlots;
+        }
+
+        function renderAvailableSlots(timeRange) {
+            const slotsContainer = document.getElementById('available-slots');
+            slotsContainer.innerHTML = '';
+            
+            const slots = rescheduleState.availableSlots[timeRange] || [];
+            const slotsMessage = document.getElementById('slots-message');
+
+            if (slots.length === 0) {
+                slotsMessage.style.display = 'block';
+                document.getElementById('slot-selector-container').style.display = 'block';
+                return;
+            }
+
+            slotsMessage.style.display = 'none';
+
+            slots.forEach(slot => {
+                const timeStr = slot.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const slotBtn = document.createElement('button');
+                slotBtn.className = 'slot-btn p-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-blue-200 transition text-sm font-medium';
+                slotBtn.textContent = timeStr;
+                slotBtn.setAttribute('data-time', slot.getTime());
+
+                slotBtn.addEventListener('click', () => {
+                    // Deseleccionar slots previos
+                    document.querySelectorAll('.slot-btn').forEach(btn => btn.classList.remove('bg-blue-500', 'text-white', 'hover:bg-blue-600'));
+                    
+                    // Seleccionar slot actual
+                    slotBtn.classList.add('bg-blue-500', 'text-white', 'hover:bg-blue-600');
+                    
+                    // Actualizar estado
+                    rescheduleState.selectedSlot = slot;
+                    document.getElementById('confirm-reschedule-btn').disabled = false;
+                });
+
+                slotsContainer.appendChild(slotBtn);
+            });
+
+            document.getElementById('slot-selector-container').style.display = 'block';
+        }
+
+        function setupRescheduleModalListeners() {
+            const dateInput = document.getElementById('reschedule-date');
+            const rangeButtons = document.querySelectorAll('.time-range-btn');
+            const confirmBtn = document.getElementById('confirm-reschedule-btn');
+            const cancelBtn = document.getElementById('cancel-reschedule-btn');
+
+            dateInput.addEventListener('change', (e) => {
+                const selectedDate = new Date(e.target.value + 'T00:00:00'); // Fija al inicio del día
+                rescheduleState.selectedDate = selectedDate;
+                rescheduleState.selectedSlot = null; // Resetear slot
+                document.getElementById('confirm-reschedule-btn').disabled = true;
+
+                // 1. Generar slots para la nueva fecha
+                rescheduleState.availableSlots = getAvailableSlotsForDay(selectedDate);
+
+                // 2. Mostrar selectores de franja horaria
+                document.getElementById('time-range-selectors').style.display = 'grid';
+
+                // 3. Limpiar y deseleccionar franjas/slots
+                document.getElementById('slot-selector-container').style.display = 'none';
+                document.getElementById('available-slots').innerHTML = '';
+                rangeButtons.forEach(btn => btn.classList.remove('bg-blue-500', 'text-white', 'hover:bg-blue-600'));
+            });
+
+            rangeButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const timeRange = e.target.dataset.range;
+                    
+                    // Deseleccionar botones de franja previos
+                    rangeButtons.forEach(b => b.classList.remove('bg-blue-500', 'text-white', 'hover:bg-blue-600'));
+
+                    // Seleccionar botón actual
+                    btn.classList.add('bg-blue-500', 'text-white', 'hover:bg-blue-600');
+                    
+                    // Renderizar los slots para la franja seleccionada
+                    renderAvailableSlots(timeRange);
+                    
+                    // Resetear la selección de slot
+                    rescheduleState.selectedSlot = null;
+                    document.getElementById('confirm-reschedule-btn').disabled = true;
+                });
+            });
+
+            confirmBtn.addEventListener('click', confirmReschedule);
+            cancelBtn.addEventListener('click', closeRescheduleModal);
+        }
+
+        function confirmReschedule() {
+            const { appointmentId, selectedSlot } = rescheduleState;
+            
+            if (!appointmentId || !selectedSlot) {
+                displayStatusMessage("Error: Por favor, selecciona un día y una hora válida.", true);
+                return;
+            }
+
+            // 1. Encontrar la cita
+            const appointmentIndex = allAppointments.findIndex(a => a.id === appointmentId);
+            if (appointmentIndex === -1) {
+                displayStatusMessage("Error: No se encontró la cita original.", true);
+                return;
+            }
+
+            const appointment = allAppointments[appointmentIndex];
+
+            // 2. Aplicar los cambios
+            appointment.dateTime = selectedSlot;
+            appointment.status = 'pending'; // Regresa a pendiente
+
+            // 3. Limpiar estado de cronómetro
+            appointment.startTime = null;
+            appointment.elapsedTime = 0;
+            timerStates.delete(appointmentId);
+
+            // 4. Actualizar UI y cerrar
+            refreshUI();
+            closeRescheduleModal();
+            displayStatusMessage(`✅ Cita de ${appointment.customerName} re-agendada para ${selectedSlot.toLocaleString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.`, false);
+        }
 
 
         // --- VISTA CALENDARIO ---
@@ -697,6 +1245,7 @@
             const year = date.getFullYear();
 
             // Actualizar título del mes
+            document.getElementById('header-title').textContent = 'Calendario'; // Asegurar que el título sea "Calendario"
             const monthYearString = date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
             document.getElementById('current-month-year').textContent = monthYearString.charAt(0).toUpperCase() + monthYearString.slice(1);
 
@@ -734,30 +1283,30 @@
                     dayCell.classList.add('has-appointment');
                 }
                 
-                // --- INICIO DE MODIFICACIÓN: Acción de clic en calendario ---
+                // Acción de clic en calendario: Muestra la vista temporal del día
                 dayCell.addEventListener('click', () => {
-                    // Acción al hacer clic: ir a la vista diaria de ese día
-                    currentSelectedDate = currentDate;
+                    const selectedDate = new Date(year, month, day);
 
-                    // 1. Ocultar todas las páginas
+                    // Ocultar solo las vistas de contenido no relevantes
+                    document.getElementById('page-today').style.display = 'none';
                     document.getElementById('page-calendar').style.display = 'none';
                     document.getElementById('page-dashboard').style.display = 'none';
+                    // NO OCULTAR: document.querySelector('nav').style.display = 'none'; 
+                    // Aseguramos que el nav está visible
+                    document.querySelector('nav').style.display = 'flex'; 
                     
-                    // 2. Mostrar la página "today"
-                    const todayPage = document.getElementById('page-today');
-                    todayPage.style.display = 'block';
+                    // Mostrar la nueva vista de día de calendario
+                    document.getElementById('page-calendar-day-view').style.display = 'block';
+                    
+                    // Renderizar la vista específica de ese día
+                    renderCalendarDayView(selectedDate, allAppointments);
 
-                    // 3. Actualizar estilos de botones de navegación
-                    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-blue-500', 'text-gray-500'));
-                    const todayNavButton = document.querySelector('button[data-page="today"]');
-                    todayNavButton.classList.replace('text-gray-500', 'text-blue-500');
-                    
-                    // 4. Actualizar la vista de "Hoy" con la fecha seleccionada
-                    // (Esto actualizará el título y renderizará las citas agrupadas)
-                    setupTodayView();
-                    renderTodayView(allAppointments);
+                    // Asegurar que el título de la app refleje el día
+                    document.getElementById('header-title').textContent = selectedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+
+                    // Ocultar acciones flotantes si están abiertas
+                    document.querySelectorAll('.appointment-actions').forEach(menu => menu.classList.add('hidden'));
                 });
-                // --- FIN DE MODIFICACIÓN ---
 
                 grid.appendChild(dayCell);
             }
@@ -769,10 +1318,13 @@
             const startDateInput = document.getElementById('start-date');
             const endDateInput = document.getElementById('end-date');
 
-            // Set default dates (hoy)
-            const todayStr = new Date().toISOString().split('T')[0];
-            startDateInput.value = todayStr;
-            endDateInput.value = todayStr;
+            // Set default dates (últimos 7 días)
+            const today = new Date();
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(today.getDate() - 7);
+
+            startDateInput.value = sevenDaysAgo.toISOString().split('T')[0];
+            endDateInput.value = today.toISOString().split('T')[0];
 
             startDateInput.addEventListener('change', updateDashboard);
             endDateInput.addEventListener('change', updateDashboard);
@@ -806,44 +1358,49 @@
             document.getElementById('kpi-pending-cuts').textContent = pendingCuts;
 
             // 4. Tiempo Promedio
-            const totalDuration = completed.reduce((sum, apt) => sum + apt.duration, 0);
-            const avgTime = totalCuts > 0 ? (totalDuration / totalCuts).toFixed(0) : 0;
+            const completedWithDuration = completed.filter(apt => apt.duration > 0);
+            const totalDuration = completedWithDuration.reduce((sum, apt) => sum + apt.duration, 0);
+            const avgTime = completedWithDuration.length > 0 ? (totalDuration / completedWithDuration.length).toFixed(0) : 0;
             document.getElementById('kpi-avg-time').textContent = avgTime;
         }
 
 
-        // --- DATOS DE EJEMPLO ---
+        // --- DATOS DE EJEMPLO Y RESET (LOCAL) ---
 
-        async function seedMockData() {
-            const appointmentsCol = getAppointmentsCollection();
+        function seedMockData() {
+            console.log("Cargando set de datos de ejemplo base (local)...");
 
-            // Revisar si ya hay datos para no duplicar
-            const existingData = await getDocs(query(appointmentsCol, where("seedGroup", "==", DEFAULT_EXAMPLE_SEED_GROUP)));
-            if (!existingData.empty) {
-                alert("El set de datos de ejemplo ya fue cargado.");
-                return;
-            }
+            // Resetear el contador de IDs local para asegurar IDs únicos por cada carga de seed
+            mockIdCounter = 1; 
+            
+            // Generar datos con IDs locales
+            const exampleAppointments = buildExampleAppointments({ referenceDate: new Date() });
+            
+            // Reemplazar todos los datos existentes
+            allAppointments = exampleAppointments;
 
-            console.log("Cargando set de datos de ejemplo base...");
+            // Inicializar estados del cronómetro para los nuevos datos
+            allAppointments.forEach(updateTimerState);
 
-            const exampleAppointments = buildExampleAppointments({ setName: "base", referenceDate: new Date() });
-
-            try {
-                for (const appointment of exampleAppointments) {
-                    const { dateTime, startTime, ...rest } = appointment;
-                    await addDoc(appointmentsCol, {
-                        ...rest,
-                        dateTime: Timestamp.fromDate(dateTime),
-                        startTime: startTime ? Timestamp.fromDate(startTime) : null,
-                    });
-                }
-                alert("Set de datos de ejemplo cargado con éxito.");
-            } catch (error) {
-                console.error("Error al cargar datos de ejemplo: ", error);
-                alert("Error al cargar datos de ejemplo.");
-            }
+            // Refrescar la UI
+            refreshUI(); 
+            displayStatusMessage(`Set de datos de ejemplo cargado con éxito. Se crearon ${exampleAppointments.length} citas.`, false);
         }
+        
+        function resetData() {
+            console.log("Reiniciando la aplicación: Borrando todos los datos locales...");
 
+            // Borrar datos locales
+            const count = allAppointments.length;
+            allAppointments = [];
+            timerStates.clear();
+            mockIdCounter = 1;
+
+            // Refrescar la UI
+            refreshUI();
+            displayStatusMessage(`✅ Aplicación reseteada. Se eliminaron ${count} citas.`, false);
+        }
+        
         // Iniciar la aplicación
         initApp();
 
