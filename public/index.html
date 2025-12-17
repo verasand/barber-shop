@@ -300,115 +300,41 @@
 
     <!-- Modulo para imports de la lógica de la aplicación -->
     <script type="module">
-        // --- LÓGICA DE GENERACIÓN DE MOCK DATA (INLINED) ---
-        
-        // --- CONSTANTES ---
-        const DEFAULT_EXAMPLE_SEED_GROUP = "v2_extensive_mock_data";
-
-        const NAMES = ["Javier Pérez", "Manuel García", "Ricardo Soto", "Andrés Castro", "Jorge Varela", "Camila López", "Miguel Torres", "Sofía Rojas"];
-        const SERVICES = [
-            { name: "Corte Clásico", duration: 30, price: 15 },
-            { name: "Corte Fade", duration: 45, price: 20 },
-            { name: "Arreglo de Barba", duration: 20, price: 10 },
-            { name: "Combo Corte + Barba", duration: 60, price: 30 }
-        ];
-        
-        // Para simular IDs únicos en la data local
-        let mockIdCounter = 1; 
-
-        // Función utilitaria para crear una cita
-        function createAppointment(date, time, status, service, phone = "555-1234", elapsedTime = 0) {
-            const dateTime = new Date(date);
-            dateTime.setHours(time.hour, time.minute, 0, 0);
-
-            let startTime = null;
-            if (status === 'in-progress' || status === 'paused') {
-                // Para citas en curso o pausadas, necesitamos una hora de inicio.
-                // Simulamos que empezó hace unos minutos.
-                startTime = new Date(dateTime.getTime() + 5 * 60000); 
-            }
-
-            return {
-                id: `mock-${mockIdCounter++}`, // Asignar ID localmente
-                customerName: NAMES[Math.floor(Math.random() * NAMES.length)],
-                phone: phone,
-                service: service.name,
-                price: service.price,
-                duration: service.duration,
-                dateTime: dateTime,
-                status: status,
-                elapsedTime: elapsedTime, // Tiempo transcurrido en ms (usado si está pausado)
-                startTime: startTime,     // Hora de inicio (usado si está en curso)
-                seedGroup: DEFAULT_EXAMPLE_SEED_GROUP // Marcador para borrado fácil
-            };
-        }
-
-        /**
-         * Genera un set extenso de citas de ejemplo para poblar la base de datos.
-         * @param {Date} referenceDate - La fecha base para calcular "hoy", "ayer" y "mañana".
-         * @returns {Array} Array de objetos de citas.
-         */
-        function buildExampleAppointments({ referenceDate }) {
-            const appointments = [];
-            const today = new Date(referenceDate);
-            today.setHours(0, 0, 0, 0);
-
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-
-            // --- 1. Citas de AYER (Todas completadas) ---
-            for (let i = 0; i < 5; i++) {
-                const time = { hour: 9 + i * 2, minute: [0, 30][Math.floor(Math.random() * 2)] };
-                const service = SERVICES[Math.floor(Math.random() * SERVICES.length)];
-                appointments.push(createAppointment(yesterday, time, 'completed', service));
-            }
-
-            // --- 2. Citas de HOY (Mezcla de estados) ---
-
-            // Pendiente (Mañana)
-            appointments.push(createAppointment(today, { hour: 10, minute: 0 }, 'pending', SERVICES[0], "555-0001"));
-            appointments.push(createAppointment(today, { hour: 11, minute: 30 }, 'pending', SERVICES[3], "555-0002"));
-
-            // En curso (Ahora) - Empezó hace 10 minutos
-            appointments.push(createAppointment(today, { hour: referenceDate.getHours(), minute: referenceDate.getMinutes() + 10 }, 'in-progress', SERVICES[1], "555-0003"));
-
-            // Pausada (Hace una hora) - Pausada con 15 minutos de trabajo
-            const pausedTime = new Date(today);
-            pausedTime.setHours(referenceDate.getHours() - 1, referenceDate.getMinutes());
-            appointments.push(createAppointment(pausedTime, { hour: pausedTime.getHours(), minute: pausedTime.getMinutes() }, 'paused', SERVICES[2], "555-0004", 15 * 60000));
-
-            // Completada (Hoy temprano)
-            appointments.push(createAppointment(today, { hour: 8, minute: 0 }, 'completed', SERVICES[0], "555-0005"));
-            
-            // Cancelada (Hoy)
-            appointments.push(createAppointment(today, { hour: 13, minute: 0 }, 'cancelled', SERVICES[1], "555-0006"));
+      
+      // Variable para guardar los datos originales del JSON sin procesar
+let originalDataset = [];
 
 
-            // --- 3. Citas de MAÑANA (Todas pendientes) ---
-            for (let i = 0; i < 5; i++) {
-                const time = { hour: 14 + i, minute: [0, 30][Math.floor(Math.random() * 2)] };
-                const service = SERVICES[Math.floor(Math.random() * SERVICES.length)];
-                appointments.push(createAppointment(tomorrow, time, 'pending', service, `555-10${i}`));
-            }
-            
-            // --- 4. Citas de la próxima semana (Pendientes) ---
-            const nextWeek = new Date(today);
-            nextWeek.setDate(nextWeek.getDate() + 7);
-            appointments.push(createAppointment(nextWeek, { hour: 9, minute: 0 }, 'pending', SERVICES[0], "555-2001"));
-            appointments.push(createAppointment(nextWeek, { hour: 16, minute: 30 }, 'pending', SERVICES[3], "555-2002"));
-            
-            // Cita Cancelada la próxima semana
-            appointments.push(createAppointment(nextWeek, { hour: 12, minute: 0 }, 'cancelled', SERVICES[2], "555-2003"));
+// FUNCIÓN PARA REGRESAR AL ESTADO BASE (RESET)
+function resetToInitialState() {
+    if (originalDataset.length === 0) {
+        displayStatusMessage("⚠️ Primero debes cargar los datos de ejemplo.", true);
+        return;
+    }
 
+    // Usamos structuredClone para crear una copia exacta y no afectar al original
+    allAppointments = structuredClone(originalDataset).map((cita, index) => {
+        return {
+            ...cita,
+            id: `seed-${index}`,
+            dateTime: new Date(cita.dateTime), // Convertimos el texto a fecha real de JS
+            startTime: null,
+            elapsedTime: 0
+        };
+    });
 
-            console.log(`Generadas ${appointments.length} citas de ejemplo.`);
-            return appointments;
-        }
+    // Limpiamos cronómetros activos
+    timerStates.clear();
+    
+    // Refrescamos toda la pantalla
+    refreshUI();
+}
 
-        // --- FIN LÓGICA DE GENERACIÓN DE MOCK DATA (INLINED) ---
+// Vinculamos el botón de "Resetear App" a nuestra nueva función de estado base
+document.getElementById('reset-data').addEventListener('click', () => {
+    resetToInitialState();
+    displayStatusMessage("🔄 App reiniciada al estado base.", false);
+});
 
 
         let userId = "local_user_12345";
@@ -1491,42 +1417,59 @@
         }
 
 
-        // --- DATOS DE EJEMPLO Y RESET (LOCAL) ---
+        // --- NUEVO SISTEMA DE DATOS EXTERNOS ---
+        let originalDatasetJSON = []; 
+        let mockIdCounter = 1; // <--- AGREGA ESTA LÍNEA AQUÍ
 
-        function seedMockData() {
-            console.log("Cargando set de datos de ejemplo base (local)...");
-
-            // Resetear el contador de IDs local para asegurar IDs únicos por cada carga de seed
-            mockIdCounter = 1; 
-            
-            // Generar datos con IDs locales
-            const exampleAppointments = buildExampleAppointments({ referenceDate: new Date() });
-            
-            // Reemplazar todos los datos existentes
-            allAppointments = exampleAppointments;
-
-            // Inicializar estados del cronómetro para los nuevos datos
-            allAppointments.forEach(updateTimerState);
-
-            // Refrescar la UI
-            refreshUI(); 
-            displayStatusMessage(`Set de datos de ejemplo cargado con éxito. Se crearon ${exampleAppointments.length} citas.`, false);
+        // Esta función ahora lee el archivo en lugar de inventar datos
+        async function seedMockData() {
+            console.log("Cargando datos desde citas_base.json...");
+            try {
+                const response = await fetch('./citas_base.json');
+                if (!response.ok) throw new Error("No se encontró el archivo");
+                
+                originalDatasetJSON = await response.json();
+                
+                // Usamos la lógica de reset para cargar los datos
+                resetData();
+                
+                if(typeof displayStatusMessage === 'function') {
+                    displayStatusMessage(`✅ ${originalDatasetJSON.length} citas cargadas desde JSON.`, false);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Error: Asegúrate de tener el archivo citas_base.json en la misma carpeta y usar Live Server.");
+            }
         }
-        
+
+        // Esta función restaura la app al estado del JSON
         function resetData() {
-            console.log("Reiniciando la aplicación: Borrando todos los datos locales...");
+            if (originalDatasetJSON.length === 0) {
+                allAppointments = [];
+            } else {
+                mockIdCounter = 1;
+                // Convertimos el texto del JSON a objetos reales de tu App
+                allAppointments = structuredClone(originalDatasetJSON).map(item => ({
+                    ...item,
+                    id: `mock-${mockIdCounter++}`,
+                    dateTime: new Date(item.dateTime), // Convierte texto a Fecha
+                    startTime: item.status === 'in-progress' ? new Date() : null,
+                    elapsedTime: item.elapsedTime || 0
+                }));
+            }
 
-            // Borrar datos locales
-            const count = allAppointments.length;
-            allAppointments = [];
             timerStates.clear();
-            mockIdCounter = 1;
+            
+            // Re-activamos tus timers originales (los de tus 1480 líneas)
+            if(typeof updateTimerState === 'function') {
+                allAppointments.forEach(updateTimerState);
+            }
 
-            // Refrescar la UI
-            refreshUI();
-            displayStatusMessage(`✅ Aplicación reseteada. Se eliminaron ${count} citas.`, false);
+            // Refrescamos tu interfaz original
+            if(typeof refreshUI === 'function') {
+                refreshUI();
+            }
         }
-        
         // Iniciar la aplicación
         initApp();
 
