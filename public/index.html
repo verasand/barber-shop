@@ -107,7 +107,22 @@
                 <div id="completed-appointments-list" class="space-y-3 p-2 border border-gray-200 rounded-lg" style="display: none;">
                     <!-- Las citas completadas se cargarán aquí, agrupadas por franja horaria -->
                 </div>
-                <!-- FIN SECCIÓN -->
+                <!-- FIN SECCIÓN COMPLETADAS -->
+
+                <!-- NUEVA SECCIÓN: CITAS CANCELADAS PLEGABLES -->
+                <div id="cancelled-appointments-toggle" class="bg-red-50 p-3 rounded-lg cursor-pointer hover:bg-red-100 flex justify-between items-center shadow-sm">
+                    <span class="font-medium text-red-700">Citas Canceladas (<span id="cancelled-count">0</span>)</span>
+                    <!-- Icono de flecha: hacia abajo por defecto (cerrado) -->
+                    <svg id="cancelled-toggle-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 transition-transform duration-300 transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+                <!-- Contenedor para la lista de canceladas (inicialmente oculto) -->
+                <div id="cancelled-appointments-list" class="space-y-3 p-2 border border-red-200 rounded-lg" style="display: none;">
+                    <!-- Las citas canceladas se cargarán aquí, agrupadas por franja horaria -->
+                </div>
+                <!-- FIN SECCIÓN CANCELADAS -->
+
 
                 <!-- SECCIÓN DE CITAS ACTIVAS/PENDIENTES -->
                 <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Citas Activas y Pendientes</h3>
@@ -125,12 +140,30 @@
                 </button>
                 <h2 class="text-xl font-bold" id="calendar-day-date-title">Citas para el [Día]</h2>
                 
-                <!-- SECCIÓN DE CITAS ACTIVAS/PENDIENTES -->
+                <!-- SECCIÓN DE CITAS ACTIVAS/PENDIENTES (Visible por defecto) -->
                 <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">Citas Pendientes</h3>
                 <div id="calendar-day-appointments-list" class="space-y-3">
                     <!-- Las citas activas/pendientes se cargarán aquí -->
                     <p class="text-gray-500 text-center">No hay citas pendientes para este día.</p>
                 </div>
+
+                <!-- SECCIÓN: CITAS COMPLETADAS PLEGABLES (Para vista temporal) -->
+                <div id="calendar-completed-appointments-toggle" class="bg-gray-100 p-3 rounded-lg cursor-pointer hover:bg-gray-200 flex justify-between items-center shadow-sm mt-4">
+                    <span class="font-medium text-gray-700">Citas Completadas (<span id="calendar-completed-count">0</span>)</span>
+                    <svg id="calendar-completed-toggle-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform duration-300 transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+                <div id="calendar-completed-appointments-list" class="space-y-3 p-2 border border-gray-200 rounded-lg" style="display: none;"></div>
+                
+                <!-- NUEVA SECCIÓN: CITAS CANCELADAS PLEGABLES (Para vista temporal) -->
+                <div id="calendar-cancelled-appointments-toggle" class="bg-red-50 p-3 rounded-lg cursor-pointer hover:bg-red-100 flex justify-between items-center shadow-sm mt-4">
+                    <span class="font-medium text-red-700">Citas Canceladas (<span id="calendar-cancelled-count">0</span>)</span>
+                    <svg id="calendar-cancelled-toggle-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 transition-transform duration-300 transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+                <div id="calendar-cancelled-appointments-list" class="space-y-3 p-2 border border-red-200 rounded-lg" style="display: none;"></div>
             </div>
 
             <!-- Página 2: Vista Calendario -->
@@ -177,8 +210,8 @@
                     </div>
                 </div>
 
-                <!-- KPIs -->
-                <div class="grid grid-cols-2 gap-4">
+                <!-- KPIs (Estructura de 3x2 para mejor balance visual con 5 indicadores) -->
+                <div class="grid grid-cols-3 gap-4">
                     <div class="bg-blue-50 p-4 rounded-lg shadow">
                         <div class="text-sm text-blue-800">Cortes Realizados</div>
                         <div id="kpi-total-cuts" class="text-2xl font-bold text-blue-900">0</div>
@@ -186,6 +219,10 @@
                     <div class="bg-green-50 p-4 rounded-lg shadow">
                         <div class="text-sm text-green-800">Ganancias</div>
                         <div id="kpi-total-earnings" class="text-2xl font-bold text-green-900">$0</div>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-lg shadow">
+                        <div class="text-sm text-red-800">Citas Canceladas</div>
+                        <div id="kpi-total-cancelled" class="text-2xl font-bold text-red-900">0</div>
                     </div>
                     <div class="bg-yellow-50 p-4 rounded-lg shadow">
                         <div class="text-sm text-yellow-800">Citas Pendientes</div>
@@ -195,6 +232,8 @@
                         <div class="text-sm text-purple-800">Tiempo Prom. (min)</div>
                         <div id="kpi-avg-time" class="text-2xl font-bold text-purple-900">0</div>
                     </div>
+                    <!-- Empty slot for grid balance -->
+                    <div></div> 
                 </div>
             </div>
 
@@ -343,6 +382,10 @@
 
             // Completada (Hoy temprano)
             appointments.push(createAppointment(today, { hour: 8, minute: 0 }, 'completed', SERVICES[0], "555-0005"));
+            
+            // Cancelada (Hoy)
+            appointments.push(createAppointment(today, { hour: 13, minute: 0 }, 'cancelled', SERVICES[1], "555-0006"));
+
 
             // --- 3. Citas de MAÑANA (Todas pendientes) ---
             for (let i = 0; i < 5; i++) {
@@ -356,6 +399,9 @@
             nextWeek.setDate(nextWeek.getDate() + 7);
             appointments.push(createAppointment(nextWeek, { hour: 9, minute: 0 }, 'pending', SERVICES[0], "555-2001"));
             appointments.push(createAppointment(nextWeek, { hour: 16, minute: 30 }, 'pending', SERVICES[3], "555-2002"));
+            
+            // Cita Cancelada la próxima semana
+            appointments.push(createAppointment(nextWeek, { hour: 12, minute: 0 }, 'cancelled', SERVICES[2], "555-2003"));
 
 
             console.log(`Generadas ${appointments.length} citas de ejemplo.`);
@@ -368,7 +414,7 @@
         let userId = "local_user_12345";
         let allAppointments = []; // Caché local de todas las citas
         let currentDisplayDate = new Date(); // Para el calendario
-        let currentSelectedDate = new Date(); // Para la vista "Hoy"
+        let currentSelectedDate = new Date(); // Para la vista "Hoy" o "Día del Calendario"
         let timerStates = new Map(); // Para manejar estado de cronómetros
 
         // --- ESTADO DEL MODAL DE RE-AGENDAMIENTO ---
@@ -427,97 +473,127 @@
             }
         }
         
-        // Reemplaza a 'listenToAppointments', ya que la data es local
+        // Se corrige para pasar la lista COMPLETA de citas a renderTodayView, 
+        // lo que permite que las secciones plegables encuentren las citas canceladas o completadas.
         function refreshUI() {
-            // 1. Filtrar citas activas y ordenar
-            let activeAppointments = allAppointments.filter(apt => apt.status !== 'cancelled');
-            activeAppointments.sort((a, b) => a.dateTime - b.dateTime);
+            // 1. Sort all appointments by date for consistent display
+            allAppointments.sort((a, b) => a.dateTime - b.dateTime);
             
             // 2. Actualizar las vistas que dependen de estos datos
-            renderTodayView(activeAppointments);
+            // Pasar la lista COMPLETA de citas
+            renderTodayView(allAppointments); 
             renderCalendar(currentDisplayDate); 
             updateDashboard(); 
         }
 
-        // --- INICIALIZACIÓN DE LA APP ---
-        
-        function setupCompletedToggle() {
-            const toggleButton = document.getElementById('completed-appointments-toggle');
-            const listContainer = document.getElementById('completed-appointments-list');
-            const toggleIcon = document.getElementById('completed-toggle-icon');
+        // --- LÓGICA REUTILIZABLE DE SECCIONES PLEGABLES (DRY) ---
+
+        /**
+         * Configura el comportamiento de despliegue/plegado (toggle) de una sección.
+         * @param {string} toggleId - ID del botón/header que se hace clic.
+         * @param {string} listId - ID del contenedor de la lista a mostrar/ocultar.
+         * @param {string} iconId - ID del SVG del icono a rotar.
+         */
+        function setupToggle(toggleId, listId, iconId) {
+            const toggleButton = document.getElementById(toggleId);
+            const listContainer = document.getElementById(listId);
+            const toggleIcon = document.getElementById(iconId);
 
             if (toggleButton) {
                 toggleButton.addEventListener('click', () => {
                     const isHidden = listContainer.style.display === 'none';
                     if (isHidden) {
                         listContainer.style.display = 'block';
-                        toggleIcon.classList.add('rotate-180'); // Rotar para apuntar hacia arriba
+                        toggleIcon.classList.add('rotate-180');
                     } else {
                         listContainer.style.display = 'none';
-                        toggleIcon.classList.remove('rotate-180'); // Devolver a apuntar hacia abajo
+                        toggleIcon.classList.remove('rotate-180');
                     }
                 });
             }
         }
 
-        function setupCalendarDayViewListeners() {
-            document.getElementById('back-to-calendar-btn').addEventListener('click', () => {
-                // Ocultar vista de día y mostrar calendario
-                document.getElementById('page-calendar-day-view').style.display = 'none';
-                document.getElementById('page-calendar').style.display = 'block';
-                // La barra de navegación permanece visible, pero debemos asegurarnos que el botón 'Calendario' esté activo
-                document.querySelector('button[data-page="calendar"]').classList.replace('text-gray-500', 'text-blue-500');
-                document.querySelector('button[data-page="today"]').classList.replace('text-blue-500', 'text-gray-500');
-
-
-                // Asegurarse de que el título principal vuelva al Calendario
-                document.getElementById('header-title').textContent = 'Calendario';
-            });
+        /**
+         * Renders a collapsible section for appointments based on status, grouped by time of day.
+         * @param {object} params
+         * @param {string} params.containerId - ID del contenedor de la lista (e.g., 'completed-appointments-list')
+         * @param {string} params.countId - ID del span para el contador (e.g., 'completed-count')
+         * @param {string} params.title - Título para la sección (e.g., 'Completadas', 'Canceladas')
+         * @param {string} params.status - Estado de las citas a filtrar ('completed' o 'cancelled')
+         * @param {Array<Object>} params.allDayAppointments - Todas las citas del día.
+         * @param {string} params.context - Contexto de renderizado ('today' o 'calendar-day')
+         */
+        function renderExpandableAppointmentSection({ 
+            containerId, 
+            countId, 
+            title, 
+            status, 
+            allDayAppointments, 
+            context 
+        }) {
+            const listElement = document.getElementById(containerId);
+            const countElement = document.getElementById(countId);
             
-            // Reutilizar setupActionListeners para manejar las acciones (Reschedule, Cancel, Call)
-            const listElement = document.getElementById('calendar-day-appointments-list');
+            // 1. Filtrar las citas por el estado requerido
+            const filteredApts = allDayAppointments.filter(apt => apt.status === status);
             
-            listElement.addEventListener('click', (e) => {
-                const card = e.target.closest('.appointment-card');
-                if (!card) return;
+            // 2. Actualizar el contador
+            countElement.textContent = filteredApts.length;
+            listElement.innerHTML = ''; // Limpiar lista
 
-                const actionButton = e.target.closest('.action-btn');
+            if (filteredApts.length === 0) {
+                listElement.innerHTML = `<p class="text-gray-500 text-center text-sm">No hay citas ${title.toLowerCase()} para este día.</p>`;
+                return;
+            }
 
-                if (actionButton) {
-                    // Se hizo clic en un botón de acción
-                    e.stopPropagation(); 
-                    const action = actionButton.dataset.action;
-                    const id = actionButton.dataset.id;
-                    
-                    // Validación de seguridad adicional: no permitir iniciar desde esta vista
-                    if (action === 'start') {
-                        displayStatusMessage("Acción 'Iniciar' no permitida desde la vista de calendario.", true);
-                        return;
-                    }
-                    
-                    handleAppointmentAction(action, id);
-                } else {
-                    // Se hizo clic en la tarjeta (Mostrar/ocultar menú de acciones)
-                    toggleActionsMenu(card);
+            // 3. Agrupar por franja horaria
+            const morningApts = filteredApts.filter(apt => apt.dateTime.getHours() < WORK_HOURS.morningEnd);
+            const afternoonApts = filteredApts.filter(apt => apt.dateTime.getHours() >= WORK_HOURS.morningEnd && apt.dateTime.getHours() < WORK_HOURS.afternoonEnd);
+            const eveningApts = filteredApts.filter(apt => apt.dateTime.getHours() >= WORK_HOURS.afternoonEnd);
+
+            let html = '';
+            
+            // Función auxiliar para renderizar el grupo
+            const renderGroup = (apts, timeRange) => {
+                if (apts.length > 0) {
+                    html += `<h4 class="font-medium text-sm text-gray-500 mt-2 mb-1">${timeRange} (${title})</h4>`;
+                    apts.forEach(apt => html += createAppointmentCardHTML(apt, context));
                 }
-            });
+            };
+
+            renderGroup(morningApts, 'Mañana');
+            renderGroup(afternoonApts, 'Tarde');
+            renderGroup(eveningApts, 'Noche');
+
+            listElement.innerHTML = html;
         }
 
+        // --- INICIALIZACIÓN DE LA APP ---
+        
+        function setupToggles() {
+            // Hoy View Toggles
+            setupToggle('completed-appointments-toggle', 'completed-appointments-list', 'completed-toggle-icon');
+            setupToggle('cancelled-appointments-toggle', 'cancelled-appointments-list', 'cancelled-toggle-icon');
+            
+            // Calendar Day View Toggles
+            setupToggle('calendar-completed-appointments-toggle', 'calendar-completed-appointments-list', 'calendar-completed-toggle-icon');
+            setupToggle('calendar-cancelled-appointments-toggle', 'calendar-cancelled-appointments-list', 'calendar-cancelled-toggle-icon');
+        }
 
         async function initApp() {
             try {
                 // Simulación de autenticación local
                 document.getElementById('userIdDisplay').textContent = userId;
 
-                // Configuración inicial de las vistas
+                // Configuración inicial de las vistas y listeners
                 setupNavigation();
                 setupCalendar();
                 setupDashboard();
                 setupTodayView();
                 setupActionListeners(); 
-                setupCompletedToggle(); // Configurar la lógica de toggle
-                setupRescheduleModalListeners(); // Configurar lógica del modal
-                setupCalendarDayViewListeners(); // Configurar lógica de la vista temporal
+                setupToggles(); // Configurar la lógica de toggle
+                setupRescheduleModalListeners(); 
+                setupCalendarDayViewListeners(); 
 
                 // Listeners para los botones de datos
                 document.getElementById('seed-data').addEventListener('click', seedMockData);
@@ -772,52 +848,35 @@
 
         function renderTodayView(appointments) {
             const todayAppointments = appointments.filter(apt => 
-                apt.dateTime.getDate() === currentSelectedDate.getDate() &&
-                apt.dateTime.getMonth() === currentSelectedDate.getMonth() &&
-                apt.dateTime.getFullYear() === currentSelectedDate.getFullYear()
+                apt.dateTime.toDateString() === currentSelectedDate.toDateString()
             );
 
-            // Separar citas en Completadas y Activas (Pendientes/En curso/Pausadas)
-            const completedApts = todayAppointments.filter(apt => apt.status === 'completed');
-            const activeApts = todayAppointments.filter(apt => apt.status !== 'completed');
+            // Activas son: pending, in-progress, paused
+            const activeApts = todayAppointments.filter(apt => apt.status !== 'completed' && apt.status !== 'cancelled');
             
+            // --- 1. Renderizar sección COMPLETADAS (Plegable) ---
+            renderExpandableAppointmentSection({
+                containerId: 'completed-appointments-list',
+                countId: 'completed-count',
+                title: 'Completadas',
+                status: 'completed',
+                allDayAppointments: todayAppointments,
+                context: 'today'
+            });
+
+            // --- 2. Renderizar sección CANCELADAS (Plegable) ---
+            renderExpandableAppointmentSection({
+                containerId: 'cancelled-appointments-list',
+                countId: 'cancelled-count',
+                title: 'Canceladas',
+                status: 'cancelled',
+                allDayAppointments: todayAppointments,
+                context: 'today'
+            });
+
+            // --- 3. Renderizar citas activas (Pendientes/En curso/Pausadas) ---
             const activeListElement = document.getElementById('today-appointments-list');
-            const completedListElement = document.getElementById('completed-appointments-list');
-            const completedCountElement = document.getElementById('completed-count');
-
-            // --- 1. Renderizar citas completadas (Plegable) ---
-            completedCountElement.textContent = completedApts.length;
-            completedListElement.innerHTML = ''; // Limpiar lista completada
-
-            if (completedApts.length > 0) {
-                // Agrupar citas completadas por hora del día
-                const completedMorningApts = completedApts.filter(apt => apt.dateTime.getHours() < 12);
-                const completedAfternoonApts = completedApts.filter(apt => apt.dateTime.getHours() >= 12 && apt.dateTime.getHours() < 18);
-                const completedEveningApts = completedApts.filter(apt => apt.dateTime.getHours() >= 18);
-                
-                let completedHtml = '';
-                
-                if (completedMorningApts.length > 0) {
-                    completedHtml += '<h4 class="font-medium text-sm text-gray-500 mt-2 mb-1">Mañana (Completadas)</h4>';
-                    completedMorningApts.forEach(apt => completedHtml += createAppointmentCardHTML(apt, 'today'));
-                }
-                if (completedAfternoonApts.length > 0) {
-                    completedHtml += '<h4 class="font-medium text-sm text-gray-500 mt-2 mb-1">Tarde (Completadas)</h4>';
-                    completedAfternoonApts.forEach(apt => completedHtml += createAppointmentCardHTML(apt, 'today'));
-                }
-                if (completedEveningApts.length > 0) {
-                    completedHtml += '<h4 class="font-medium text-sm text-gray-500 mt-2 mb-1">Noche (Completadas)</h4>';
-                    completedEveningApts.forEach(apt => completedHtml += createAppointmentCardHTML(apt, 'today'));
-                }
-
-                completedListElement.innerHTML = completedHtml;
-
-            } else {
-                completedListElement.innerHTML = '<p class="text-gray-500 text-center text-sm">No hay citas completadas para este día.</p>';
-            }
-
-            // --- 2. Renderizar citas activas (Pendientes/En curso/Pausadas) ---
-            activeListElement.innerHTML = ''; // Limpiar lista activa
+            activeListElement.innerHTML = ''; 
 
             if (activeApts.length === 0) {
                 activeListElement.innerHTML = '<p class="text-gray-500 text-center">No hay citas activas para hoy.</p>';
@@ -825,9 +884,9 @@
             }
             
             // Agrupar citas activas por hora del día
-            const activeMorningApts = activeApts.filter(apt => apt.dateTime.getHours() < 12);
-            const activeAfternoonApts = activeApts.filter(apt => apt.dateTime.getHours() >= 12 && apt.dateTime.getHours() < 18);
-            const activeEveningApts = activeApts.filter(apt => apt.dateTime.getHours() >= 18);
+            const activeMorningApts = activeApts.filter(apt => apt.dateTime.getHours() < WORK_HOURS.morningEnd);
+            const activeAfternoonApts = activeApts.filter(apt => apt.dateTime.getHours() >= WORK_HOURS.morningEnd && apt.dateTime.getHours() < WORK_HOURS.afternoonEnd);
+            const activeEveningApts = activeApts.filter(apt => apt.dateTime.getHours() >= WORK_HOURS.afternoonEnd);
 
             let activeContentHtml = '';
 
@@ -857,45 +916,59 @@
             document.getElementById('calendar-day-date-title').textContent = `Citas para el ${date.toLocaleDateString('es-ES', options)}`;
 
             const dayAppointments = appointments.filter(apt => 
-                apt.dateTime.getDate() === date.getDate() &&
-                apt.dateTime.getMonth() === date.getMonth() &&
-                apt.dateTime.getFullYear() === date.getFullYear() &&
-                // En esta vista solo se muestran las activas/pendientes
-                apt.status !== 'completed' && apt.status !== 'cancelled' 
+                apt.dateTime.toDateString() === date.toDateString()
             );
-
+            
+            // --- 1. Renderizar sección PENDIENTES/ACTIVAS (Visible por defecto) ---
+            const activeApts = dayAppointments.filter(apt => apt.status !== 'completed' && apt.status !== 'cancelled');
             const listElement = document.getElementById('calendar-day-appointments-list');
-            listElement.innerHTML = ''; // Limpiar lista
+            listElement.innerHTML = ''; 
 
-            if (dayAppointments.length === 0) {
+            if (activeApts.length === 0) {
                 listElement.innerHTML = '<p class="text-gray-500 text-center">No hay citas pendientes para este día.</p>';
-                return;
+            } else {
+                // Agrupar y renderizar activas (similar a la lógica de renderTodayView)
+                let activeContentHtml = '';
+                const activeMorningApts = activeApts.filter(apt => apt.dateTime.getHours() < WORK_HOURS.morningEnd);
+                const activeAfternoonApts = activeApts.filter(apt => apt.dateTime.getHours() >= WORK_HOURS.morningEnd && apt.dateTime.getHours() < WORK_HOURS.afternoonEnd);
+                const activeEveningApts = activeApts.filter(apt => apt.dateTime.getHours() >= WORK_HOURS.afternoonEnd);
+                
+                if (activeMorningApts.length > 0) {
+                    activeContentHtml += '<h4 class="font-medium text-sm text-gray-500 mt-4 mb-2">Mañana</h4>';
+                    // Pasar contexto 'calendar-day' para ocultar el botón 'start'
+                    activeMorningApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'calendar-day')); 
+                }
+                if (activeAfternoonApts.length > 0) {
+                    activeContentHtml += '<h4 class="font-medium text-sm text-gray-500 mt-4 mb-2">Tarde</h4>';
+                    activeAfternoonApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'calendar-day'));
+                }
+                if (activeEveningApts.length > 0) {
+                    activeContentHtml += '<h4 class="font-medium text-sm text-gray-500 mt-4 mb-2">Noche</h4>';
+                    activeEveningApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'calendar-day'));
+                }
+                listElement.innerHTML = activeContentHtml;
             }
-            
-            // Agrupar citas activas por hora del día
-            const activeMorningApts = dayAppointments.filter(apt => apt.dateTime.getHours() < WORK_HOURS.morningEnd);
-            const activeAfternoonApts = dayAppointments.filter(apt => apt.dateTime.getHours() >= WORK_HOURS.morningEnd && apt.dateTime.getHours() < WORK_HOURS.afternoonEnd);
-            const activeEveningApts = dayAppointments.filter(apt => apt.dateTime.getHours() >= WORK_HOURS.afternoonEnd);
 
-            let activeContentHtml = '';
 
-            if (activeMorningApts.length > 0) {
-                activeContentHtml += '<h4 class="font-medium text-sm text-gray-500 mt-4 mb-2">Mañana</h4>';
-                // Pasar contexto 'calendar-day' para ocultar el botón 'start'
-                activeMorningApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'calendar-day')); 
-            }
+            // --- 2. Renderizar sección COMPLETADAS (Plegable) - Reutilizando la función genérica
+            renderExpandableAppointmentSection({
+                containerId: 'calendar-completed-appointments-list',
+                countId: 'calendar-completed-count',
+                title: 'Completadas',
+                status: 'completed',
+                allDayAppointments: dayAppointments,
+                context: 'calendar-day'
+            });
 
-            if (activeAfternoonApts.length > 0) {
-                activeContentHtml += '<h4 class="font-medium text-sm text-gray-500 mt-4 mb-2">Tarde</h4>';
-                activeAfternoonApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'calendar-day'));
-            }
-
-            if (activeEveningApts.length > 0) {
-                activeContentHtml += '<h4 class="font-medium text-sm text-gray-500 mt-4 mb-2">Noche</h4>';
-                activeEveningApts.forEach(apt => activeContentHtml += createAppointmentCardHTML(apt, 'calendar-day'));
-            }
-            
-            listElement.innerHTML = activeContentHtml;
+            // --- 3. Renderizar sección CANCELADAS (Plegable) - Reutilizando la función genérica
+            renderExpandableAppointmentSection({
+                containerId: 'calendar-cancelled-appointments-list',
+                countId: 'calendar-cancelled-count',
+                title: 'Canceladas',
+                status: 'cancelled',
+                allDayAppointments: dayAppointments,
+                context: 'calendar-day' 
+            });
         }
 
         function createAppointmentCardHTML(apt, context = 'today') {
@@ -965,15 +1038,21 @@
                     statusBadge = '<span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-gray-600 bg-gray-200">Completada</span>';
                     actionsHtml = ``; // Sin acciones para completadas
                     break;
+                case 'cancelled':
+                    statusBadge = '<span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-red-600 bg-red-200">Cancelada</span>';
+                    actionsHtml = ``; // Sin acciones para canceladas
+                    break;
             }
 
             // --- Layout de hora y cronómetro ---
             const timerState = timerStates.get(apt.id);
             const initialElapsedMs = timerState ? getElapsedTimeMs(timerState.elapsedTime, timerState.startTime, timerState.status) : 0;
             
-            // Las citas completadas no muestran el menú de acciones al hacer clic
-            const cursorClass = apt.status === 'completed' ? 'cursor-default' : 'cursor-pointer hover:shadow-md transition-shadow';
-            const pointerEventsClass = apt.status === 'completed' ? 'pointer-events-auto' : 'pointer-events-none';
+            // Las citas completadas/canceladas no muestran el menú de acciones al hacer clic
+            const isInactive = apt.status === 'completed' || apt.status === 'cancelled';
+            const cursorClass = isInactive ? 'cursor-default' : 'cursor-pointer hover:shadow-md transition-shadow';
+            const pointerEventsClass = isInactive ? 'pointer-events-auto' : 'pointer-events-none'; // Permite que el tap abra el menú
+            const hasActions = actionsHtml.length > 0;
 
             return `
                 <div class="appointment-card bg-white p-4 rounded-lg shadow border border-gray-200 flex items-center space-x-4 relative ${cursorClass}">
@@ -986,7 +1065,7 @@
                         <h3 class="font-semibold text-gray-800">${apt.customerName}</h3>
                         <p class="text-sm text-gray-600">${apt.service} ($${apt.price})</p>
                         <div class="mt-1">${statusBadge}</div>
-                        ${(timerState && apt.status !== 'completed') ? `
+                        ${(timerState && apt.status !== 'completed' && apt.status !== 'cancelled') ? `
                             <div class="timer-display mt-2 bg-gray-100 px-2 py-1 rounded-md text-base font-mono
                                 ${timerState.status === 'in-progress' ? 'text-green-700' : 'text-yellow-700'}"
                                  data-id="${apt.id}">
@@ -995,8 +1074,8 @@
                         ` : ''}
                     </div>
                     <div class="text-lg font-bold text-green-600 flex-shrink-0 ${pointerEventsClass}"></div>
-                    <!-- Contenedor de Acciones (Oculto por defecto) -->
-                    <div class="appointment-actions ${apt.status === 'completed' ? 'hidden' : 'hidden'} absolute bottom-2 right-2 flex flex-col gap-2 z-20">
+                    <!-- Contenedor de Acciones (Oculto por defecto, solo visible si hay acciones disponibles) -->
+                    <div class="appointment-actions ${hasActions ? 'hidden' : 'hidden'} absolute bottom-2 right-2 flex flex-col gap-2 z-20">
                         ${actionsHtml}
                     </div>
                 </div>
@@ -1048,8 +1127,10 @@
 
         function getAvailableSlotsForDay(targetDate) {
             const slots = [];
+            // Filtrar solo citas que ocupan un slot (pending, in-progress, paused)
             const existingAppointments = allAppointments.filter(apt => 
-                apt.dateTime.toDateString() === targetDate.toDateString() && apt.status !== 'cancelled'
+                apt.dateTime.toDateString() === targetDate.toDateString() && 
+                (apt.status === 'pending' || apt.status === 'in-progress' || apt.status === 'paused')
             );
 
             // Iniciar en la hora de inicio (8:00 AM)
@@ -1225,6 +1306,50 @@
 
         // --- VISTA CALENDARIO ---
 
+        function setupCalendarDayViewListeners() {
+            document.getElementById('back-to-calendar-btn').addEventListener('click', () => {
+                // Ocultar vista de día y mostrar calendario
+                document.getElementById('page-calendar-day-view').style.display = 'none';
+                document.getElementById('page-calendar').style.display = 'block';
+                // La barra de navegación permanece visible, y activamos el botón 'Calendario'
+                document.querySelector('button[data-page="calendar"]').classList.replace('text-gray-500', 'text-blue-500');
+                document.querySelector('button[data-page="today"]').classList.replace('text-blue-500', 'text-gray-500');
+                document.querySelector('button[data-page="dashboard"]').classList.replace('text-blue-500', 'text-gray-500');
+
+
+                // Asegurarse de que el título principal vuelva al Calendario
+                document.getElementById('header-title').textContent = 'Calendario';
+            });
+            
+            // Reutilizar setupActionListeners para manejar las acciones (Reschedule, Cancel, Call)
+            const listElement = document.getElementById('calendar-day-appointments-list');
+            
+            listElement.addEventListener('click', (e) => {
+                const card = e.target.closest('.appointment-card');
+                if (!card) return;
+
+                const actionButton = e.target.closest('.action-btn');
+
+                if (actionButton) {
+                    // Se hizo clic en un botón de acción
+                    e.stopPropagation(); 
+                    const action = actionButton.dataset.action;
+                    const id = actionButton.dataset.id;
+                    
+                    // Validación de seguridad adicional: no permitir iniciar desde esta vista
+                    if (action === 'start') {
+                        displayStatusMessage("Acción 'Iniciar' no permitida desde la vista de calendario.", true);
+                        return;
+                    }
+                    
+                    handleAppointmentAction(action, id);
+                } else {
+                    // Se hizo clic en la tarjeta (Mostrar/ocultar menú de acciones)
+                    toggleActionsMenu(card);
+                }
+            });
+        }
+
         function setupCalendar() {
             document.getElementById('prev-month').addEventListener('click', () => {
                 currentDisplayDate.setMonth(currentDisplayDate.getMonth() - 1);
@@ -1291,9 +1416,6 @@
                     document.getElementById('page-today').style.display = 'none';
                     document.getElementById('page-calendar').style.display = 'none';
                     document.getElementById('page-dashboard').style.display = 'none';
-                    // NO OCULTAR: document.querySelector('nav').style.display = 'none'; 
-                    // Aseguramos que el nav está visible
-                    document.querySelector('nav').style.display = 'flex'; 
                     
                     // Mostrar la nueva vista de día de calendario
                     document.getElementById('page-calendar-day-view').style.display = 'block';
@@ -1344,6 +1466,7 @@
 
             const completed = filteredAppointments.filter(apt => apt.status === 'completed');
             const pending = filteredAppointments.filter(apt => apt.status === 'pending');
+            const cancelled = filteredAppointments.filter(apt => apt.status === 'cancelled'); 
 
             // 1. Total Cortes Realizados
             const totalCuts = completed.length;
@@ -1356,8 +1479,11 @@
             // 3. Citas Pendientes
             const pendingCuts = pending.length;
             document.getElementById('kpi-pending-cuts').textContent = pendingCuts;
+            
+            // 4. Citas Canceladas (NEW KPI)
+            document.getElementById('kpi-total-cancelled').textContent = cancelled.length;
 
-            // 4. Tiempo Promedio
+            // 5. Tiempo Promedio
             const completedWithDuration = completed.filter(apt => apt.duration > 0);
             const totalDuration = completedWithDuration.reduce((sum, apt) => sum + apt.duration, 0);
             const avgTime = completedWithDuration.length > 0 ? (totalDuration / completedWithDuration.length).toFixed(0) : 0;
